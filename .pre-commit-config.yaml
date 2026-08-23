@@ -1,0 +1,18 @@
+repos:
+  - repo: local
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        entry: /opt/agent-lab/.venv/bin/detect-secrets-hook
+        language: system
+        args:
+          - --baseline
+          - .secrets.baseline
+
+      - id: python-compile
+        name: Python syntax check
+        entry: /opt/agent-lab/.venv/bin/python -m compileall -q app
+        language: system
+        pass_filenames: false
+        types:
+          - python

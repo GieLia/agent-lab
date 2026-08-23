@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Agent Lab</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Segoe UI, Arial, sans-serif;
+    background: #0b1118;
+    color: #e6edf3;
+}
+
+header {
+    background: #111923;
+    border-bottom: 1px solid #263241;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+small {
+    color: #8b99aa;
+}
+
+main {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 18px;
+}
+
+.panel {
+    background: #111923;
+    border: 1px solid #263241;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.panel h2 {
+    margin: 0;
+    padding: 13px 15px;
+    font-size: 15px;
+    background: #17212c;
+    border-bottom: 1px solid #263241;
+}
+
+.content {
+    padding: 15px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.card {
+    background: #111923;
+    border: 1px solid #263241;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.label {
+    color: #8b99aa;
+    font-size: 12px;
+}
+
+.value {
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.online {
+    color: #39c56b;
+}
+
+.running {
+    color: #e6b94a;
+}
+
+.failed {
+    color: #e05d5d;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #263241;
+    text-align: left;
+    font-size: 13px;
+}
+
+th {
+    color: #8b99aa;
+}
+
+tbody tr {
+    cursor: pointer;
+}
+
+tbody tr:hover {
+    background: #17212c;
+}
+
+button {
+    border: 0;
+    border-radius: 6px;
+    background: #2784e8;
+    color: white;
+    font-weight: 600;
+    padding: 9px 14px;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #374656;
+}
+
+button.danger {
+    background: #a83d3d;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+textarea, input {
+    width: 100%;
+    box-sizing: border-box;
+    background: #0b1118;
+    color: #e6edf3;
+    border: 1px solid #344354;
+    border-radius: 6px;
+    padding: 9px;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+pre {
+    background: #080d12;
+    border: 1px solid #263241;
+    border-radius: 7px;
+    padding: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 460px;
+    overflow-y: auto;
+    font-family: Consolas, monospace;
+    font-size: 12px;
+}
+
+.topic {
+    color: #c6d2de;
+    line-height: 1.4;
+    margin-bottom: 12px;
+}
+
+#newPanel {
+    display: none;
+    margin-top: 18px;
+}
+
+.status {
+    font-weight: 600;
+}
+
+@media(max-width: 1000px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div>
+    <h1>AI Agent Lab</h1>
+    <small>Claude + Codex + LangGraph</small>
+</div>
+
+<div>
+    <button onclick="showNew()">+ Naujas tyrimas</button>
+    <button class="secondary" onclick="refreshAll()">Atnaujinti</button>
+</div>
+</header>
+
+<main>
+
+<section>
+
+<div class="cards">
+
+<div class="card">
+    <div class="label">API</div>
+    <div class="value online" id="api">...</div>
+</div>
+
+<div class="card">
+    <div class="label">Vykdomi</div>
+    <div class="value" id="running">0</div>
+</div>
+
+<div class="card">
+    <div class="label">Baigti</div>
+    <div class="value" id="finished">0</div>
+</div>
+
+<div class="card">
+    <div class="label">Klaidos</div>
+    <div class="value failed" id="failed">0</div>
+</div>
+
+</div>
+
+<div class="panel">
+
+<h2>Agentų procesai</h2>
+
+<div class="content">
+
+<table>
+<thead>
+<tr>
+    <th>Run</th>
+    <th>Etapas</th>
+    <th>Iteracija</th>
+    <th>Quality</th>
+    <th>Procesas</th>
+</tr>
+</thead>
+
+<tbody id="runs"></tbody>
+</table>
+
+</div>
+</div>
+
+
+<div class="panel" id="newPanel">
+
+<h2>Naujas tyrimas</h2>
+
+<div class="content">
+
+<label>Tema</label>
+
+<textarea id="topic"
+placeholder="Įvesk tyrimo temą..."></textarea>
+
+<div class="row">
+
+<div>
+<label>Max iterations</label>
+<input id="iterations"
+type="number"
+value="2"
+min="1"
+max="10">
+</div>
+
+<div>
+<label>Quality threshold</label>
+<input id="threshold"
+type="number"
+value="0.65"
+min="0"
+max="1"
+step="0.05">
+</div>
+
+</div>
+
+<div class="actions">
+<button onclick="startRun()">START</button>
+<button class="secondary"
+onclick="hideNew()">Atšaukti</button>
+</div>
+
+<div id="startMessage"></div>
+
+</div>
+</div>
+
+</section>
+
+
+<section class="panel">
+
+<h2>Pasirinktas procesas</h2>
+
+<div class="content" id="details">
+
+Pasirink procesą iš lentelės.
+
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+let selected = null;
+let tab = "log";
+
+
+async function request(url, options = {}) {
+    const r = await fetch(url, options);
+
+    if (!r.ok) {
+        let msg = "HTTP " + r.status;
+
+        try {
+            const x = await r.json();
+            msg = x.detail || msg;
+        } catch {}
+
+        throw new Error(msg);
+    }
+
+    return r;
+}
+
+
+async function health() {
+    try {
+        await request("/health");
+        document.getElementById("api").textContent = "ONLINE";
+    } catch {
+        document.getElementById("api").textContent = "OFFLINE";
+    }
+}
+
+
+async function refreshRuns() {
+
+    const r = await request("/runs");
+    const data = await r.json();
+
+    let running = 0;
+    let finished = 0;
+    let failed = 0;
+
+    const body = document.getElementById("runs");
+    body.innerHTML = "";
+
+    for (const run of data) {
+
+        if (run.process_state === "running")
+            running++;
+
+        if (run.phase === "finished")
+            finished++;
+
+        if (
+            run.phase === "failed" ||
+            run.process_state === "failed"
+        )
+            failed++;
+
+
+        const tr = document.createElement("tr");
+
+        const q =
+            run.quality_score == null
+            ? "-"
+            : Number(run.quality_score).toFixed(2);
+
+        tr.innerHTML = `
+            <td>${run.run_id.substring(0,8)}</td>
+            <td class="status">${run.phase}</td>
+            <td>${run.iteration ?? "-"} / ${run.max_iterations ?? "-"}</td>
+            <td>${q}</td>
+            <td>${run.process_state}</td>
+        `;
+
+        tr.onclick = () => {
+            selected = run.run_id;
+            showRun();
+        };
+
+        body.appendChild(tr);
+    }
+
+    document.getElementById("running").textContent = running;
+    document.getElementById("finished").textContent = finished;
+    document.getElementById("failed").textContent = failed;
+}
+
+
+async function showRun() {
+
+    if (!selected)
+        return;
+
+    const r = await request("/runs/" + selected);
+    const run = await r.json();
+
+    const stopDisabled =
+        run.process_state === "running"
+        ? ""
+        : "disabled";
+
+    document.getElementById("details").innerHTML = `
+
+        <div class="label">RUN ID</div>
+        <div>${run.run_id}</div>
+
+        <br>
+
+        <div class="label">TOPIC</div>
+        <div class="topic">${run.topic || "-"}</div>
+
+        <div class="row">
+
+            <div>
+                <div class="label">PHASE</div>
+                <div>${run.phase}</div>
+            </div>
+
+            <div>
+                <div class="label">QUALITY</div>
+                <div>${run.quality_score ?? "-"}</div>
+            </div>
+
+        </div>
+
+        <div class="actions">
+
+            <button onclick="showLog()">
+                Live log
+            </button>
+
+            <button class="secondary"
+            onclick="showResult()">
+                Result
+            </button>
+
+            <button class="danger"
+            ${stopDisabled}
+            onclick="stopRun()">
+                STOP
+            </button>
+
+        </div>
+
+        <pre id="output">Loading...</pre>
+    `;
+
+    if (tab === "result")
+        showResult();
+    else
+        showLog();
+}
+
+
+async function showLog() {
+
+    tab = "log";
+
+    const out =
+        document.getElementById("output");
+
+    try {
+        const r =
+            await request(
+                "/runs/" +
+                selected +
+                "/log"
+            );
+
+        out.textContent =
+            await r.text();
+
+        out.scrollTop =
+            out.scrollHeight;
+
+    } catch(e) {
+        out.textContent = e.message;
+    }
+}
+
+
+async function showResult() {
+
+    tab = "result";
+
+    const out =
+        document.getElementById("output");
+
+    try {
+        const r =
+            await request(
+                "/runs/" +
+                selected +
+                "/result"
+            );
+
+        out.textContent =
+            await r.text();
+
+    } catch(e) {
+        out.textContent = e.message;
+    }
+}
+
+
+async function stopRun() {
+
+    if (!selected)
+        return;
+
+    if (!confirm("Sustabdyti šį procesą?"))
+        return;
+
+    await request(
+        "/runs/" + selected + "/stop",
+        { method: "POST" }
+    );
+
+    await refreshAll();
+}
+
+
+function showNew() {
+    document.getElementById("newPanel").style.display = "block";
+}
+
+
+function hideNew() {
+    document.getElementById("newPanel").style.display = "none";
+}
+
+
+async function startRun() {
+
+    const topic =
+        document.getElementById("topic")
+        .value.trim();
+
+    const maxIterations =
+        Number(
+            document.getElementById("iterations").value
+        );
+
+    const threshold =
+        Number(
+            document.getElementById("threshold").value
+        );
+
+    if (topic.length < 3) {
+        alert("Įvesk tyrimo temą.");
+        return;
+    }
+
+    const r = await request(
+        "/runs",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+                topic: topic,
+                max_iterations: maxIterations,
+                quality_threshold: threshold
+            })
+        }
+    );
+
+    const result = await r.json();
+
+    selected = result.run_id;
+
+    hideNew();
+
+    await refreshAll();
+
+    await showRun();
+}
+
+
+async function refreshAll() {
+
+    await health();
+
+    await refreshRuns();
+
+    if (selected) {
+
+        await showRun();
+
+        if (tab === "log")
+            await showLog();
+    }
+}
+
+
+refreshAll();
+
+setInterval(
+    refreshAll,
+    3000
+);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,85 @@
+# ============================================================
+# AI Agent Lab - files NEVER committed
+# ============================================================
+
+# Secrets / environment
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+**/*secret*
+**/*secrets*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Runtime state
+state/
+runs/
+logs/
+artifacts/
+
+# Agent working directories
+workspace/
+
+# Local backups
+backups/
+
+# Databases
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
+# PID / runtime files
+*.pid
+*.sock
+
+# Docker runtime data
+infra/postgres_data/
+infra/n8n_data/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.bak
+
+# Generated logs
+*.log
+
+# Credentials / auth caches
+.credentials/
+credentials/
+.auth/
+auth/
+
+# Manual/temporary source backups - Git replaces these
+*.backup
+*.py0
+
+# detect-secrets baseline is safe and must be versioned
+!.secrets.baseline
