@@ -1,5 +1,7 @@
 import asyncio
 import json
+import os
+
 from pathlib import Path
 
 
@@ -11,9 +13,24 @@ async def run_claude(
     cwd: Path,
     timeout: int = 1200,
     max_turns: int = 8,
+    tool_profile: str | None = None,
+    system_prompt: str | None = None,
+    json_schema: dict | None = None,
 ) -> str:
 
-    process = await asyncio.create_subprocess_exec(
+    if tool_profile is None:
+        tool_profile = os.getenv(
+            "CLAUDE_TOOL_PROFILE",
+            "default",
+        )
+
+    tool_profile = (
+        tool_profile
+        .strip()
+        .lower()
+    )
+
+    command = [
         CLAUDE_BIN,
         "-p",
         prompt,
@@ -22,6 +39,56 @@ async def run_claude(
         "--max-turns",
         str(max_turns),
         "--no-session-persistence",
+    ]
+
+    if tool_profile == "reasoning":
+        command.extend(
+            [
+                "--tools",
+                "",
+                "--permission-mode",
+                "dontAsk",
+                "--strict-mcp-config",
+                "--safe-mode",
+            ]
+        )
+
+        max_turns_index = command.index(
+            "--max-turns"
+        ) + 1
+
+        command[max_turns_index] = str(
+            min(max_turns, 3)
+        )
+
+    elif tool_profile != "default":
+        raise ValueError(
+            "Unknown CLAUDE_TOOL_PROFILE: "
+            f"{tool_profile}"
+        )
+
+    if system_prompt:
+        command.extend(
+            [
+                "--system-prompt",
+                system_prompt,
+            ]
+        )
+
+    if json_schema is not None:
+        command.extend(
+            [
+                "--json-schema",
+                json.dumps(
+                    json_schema,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ),
+            ]
+        )
+
+    process = await asyncio.create_subprocess_exec(
+        *command,
         cwd=str(cwd),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -36,6 +103,7 @@ async def run_claude(
     except asyncio.TimeoutError:
         process.kill()
         await process.wait()
+
         raise RuntimeError(
             f"Claude timeout after {timeout}s"
         )
@@ -70,6 +138,7 @@ async def run_claude(
         return stdout_text
 
     if isinstance(data, dict):
+
         if data.get("is_error"):
             raise RuntimeError(
                 "Claude returned an error:\n"
@@ -78,6 +147,27 @@ async def run_claude(
                     indent=2,
                     ensure_ascii=False,
                 )
+            )
+
+        if json_schema is not None:
+            structured = data.get(
+                "structured_output"
+            )
+
+            if structured is None:
+                raise RuntimeError(
+                    "Claude returned no "
+                    "structured_output:\n"
+                    + json.dumps(
+                        data,
+                        indent=2,
+                        ensure_ascii=False,
+                    )
+                )
+
+            return json.dumps(
+                structured,
+                ensure_ascii=False,
             )
 
         return str(

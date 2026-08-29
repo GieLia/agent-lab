@@ -1,0 +1,98 @@
+cases:
+
+  - id: agent_architecture
+    category: architecture
+    prompt: >-
+      Suprojektuok patikimą self-hosted multi-LLM agentų sistemą,
+      kurioje yra planner, keli lygiagrečiai workers, critic,
+      persistent checkpointing, retry mechanizmas ir galutinė synthesis.
+      Paaiškink gedimų izoliaciją ir concurrency kontrolę.
+    required_points:
+      - planner
+      - parallel workers
+      - critic
+      - persistent checkpoints
+      - retry
+      - synthesis
+      - failure isolation
+      - concurrency limits
+
+  - id: retry_diagnosis
+    category: reasoning
+    prompt: >-
+      AI tyrimų sistemos critic balai per tris iteracijas buvo
+      0.57, 0.48 ir 0.45. Išanalizuok, kodėl paprastas retry
+      mechanizmas gali bloginti rezultatą, ir suprojektuok revision
+      mechanizmą, kuris panaudoja ankstesnį draftą, critic pastabas
+      bei stagnation detection.
+    required_points:
+      - previous draft
+      - critic feedback
+      - targeted revision
+      - score delta
+      - stagnation detection
+      - strategy change
+
+  - id: state_storage
+    category: infrastructure
+    prompt: >-
+      Palygink SQLite ir PostgreSQL naudojimą agentų sistemoje.
+      LangGraph execution checkpointai turi būti patikimi,
+      o runs, workers, attempts, evidence ir metrics turi būti
+      pasiekiami keliems procesams. Pasiūlyk konkretų duomenų
+      sluoksnių paskirstymą ir pagrįsk pasirinkimą.
+    required_points:
+      - SQLite checkpoints
+      - PostgreSQL structured data
+      - concurrency
+      - WAL or locking
+      - single source of truth
+      - migration path
+
+  - id: security_boundary
+    category: security
+    prompt: >-
+      FastAPI agentų valdymo dashboard veikia tik 127.0.0.1:8000
+      ir pasiekiamas per SSH tunnel. Įvertink saugumą ir pasiūlyk
+      minimalų modelį, kuris išliktų saugus vėliau pridėjus VPN,
+      reverse proxy arba remote access.
+    required_points:
+      - loopback
+      - SSH tunnel
+      - authentication
+      - bearer token or equivalent
+      - least privilege
+      - TLS or trusted tunnel
+      - secrets management
+
+  - id: orchestration_roles
+    category: architecture
+    prompt: >-
+      Sistemoje kartu naudojami n8n ir LangGraph.
+      Aiškiai atskirk jų atsakomybes taip, kad nebūtų dvigubos
+      orkestracijos ir sunkiai diagnozuojamų workflow.
+    required_points:
+      - n8n external triggers
+      - integrations
+      - scheduling
+      - LangGraph agent state
+      - reasoning loop
+      - retry
+      - clear ownership boundary
+
+  - id: git_governance
+    category: engineering
+    prompt: >-
+      Suprojektuok saugų workflow, kai keli AI coding agentai
+      lygiagrečiai keičia tą patį projektą. Reikia Git,
+      izoliuotų darbo sričių, testų, secret scanning,
+      žmogaus review ir kontroliuojamo deploy.
+    required_points:
+      - branch
+      - worktree
+      - isolated agent workspace
+      - tests
+      - secret scan
+      - pull request
+      - human review
+      - controlled merge

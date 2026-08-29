@@ -216,31 +216,102 @@ async def research_node(
         "research",
     )
 
-    previous_feedback = ""
+    claude_revision = ""
+    codex_revision = ""
 
     if state.get("critique"):
 
-        previous_feedback = f"""
-THIS IS A RESEARCH RETRY.
+        critique = str(
+            state["critique"]
+        )
 
-Previous critic feedback:
+        missing_evidence = json.dumps(
+            state.get(
+                "missing_evidence",
+                [],
+            ),
+            ensure_ascii=False,
+            indent=2,
+        )
 
-{state["critique"]}
+        previous_quality = state.get(
+            "quality_score"
+        )
 
-Missing evidence:
+        previous_claude = str(
+            state.get(
+                "claude_result",
+                "",
+            )
+        ).strip()
 
-{json.dumps(
-    state.get(
-        "missing_evidence",
-        [],
-    ),
-    ensure_ascii=False,
-    indent=2,
-)}
+        previous_codex = str(
+            state.get(
+                "codex_result",
+                "",
+            )
+        ).strip()
 
-Improve specifically on these weaknesses.
+        claude_revision = f"""
+THIS IS A REVISION, NOT A NEW REPORT.
 
-Do not simply repeat the previous report.
+Previous quality score:
+
+{previous_quality}
+
+YOUR PREVIOUS REPORT:
+
+{previous_claude}
+
+CRITIC FEEDBACK:
+
+{critique}
+
+MISSING EVIDENCE:
+
+{missing_evidence}
+
+Revise YOUR previous report.
+
+Rules:
+
+1. Preserve material that is correct and was not criticized.
+2. Fix specifically the weaknesses identified by the critic.
+3. Address missing evidence where possible.
+4. Do not regenerate the report from scratch.
+5. Do not silently remove useful prior findings.
+6. Return the complete revised Markdown report.
+"""
+
+        codex_revision = f"""
+THIS IS A REVISION, NOT A NEW REPORT.
+
+Previous quality score:
+
+{previous_quality}
+
+YOUR PREVIOUS REPORT:
+
+{previous_codex}
+
+CRITIC FEEDBACK:
+
+{critique}
+
+MISSING EVIDENCE:
+
+{missing_evidence}
+
+Revise YOUR previous report.
+
+Rules:
+
+1. Preserve material that is correct and was not criticized.
+2. Fix specifically the weaknesses identified by the critic.
+3. Address missing evidence where possible.
+4. Do not regenerate the report from scratch.
+5. Do not silently remove useful prior findings.
+6. Return the complete revised Markdown report.
 """
 
     claude_prompt = f"""
@@ -250,7 +321,7 @@ Research independently:
 
 {state["topic"]}
 
-{previous_feedback}
+{claude_revision}
 
 Requirements:
 
@@ -271,7 +342,7 @@ Critically research:
 
 {state["topic"]}
 
-{previous_feedback}
+{codex_revision}
 
 Requirements:
 
@@ -284,11 +355,37 @@ Requirements:
 7. Produce a structured Markdown report.
 """
 
+    trace_dir = (
+        run_dir / "trace"
+    )
+
+    trace_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    (
+        trace_dir
+        / f"iter{iteration}_claude_prompt.txt"
+    ).write_text(
+        claude_prompt,
+        encoding="utf-8",
+    )
+
+    (
+        trace_dir
+        / f"iter{iteration}_codex_prompt.txt"
+    ).write_text(
+        codex_prompt,
+        encoding="utf-8",
+    )
+
     start = time.time()
 
     claude_task = run_claude(
         claude_prompt,
         run_dir,
+        tool_profile="reasoning",
     )
 
     codex_task = run_codex(
@@ -321,6 +418,32 @@ Requirements:
     ):
         errors["codex"] = str(
             codex_result
+        )
+
+    if (
+        not isinstance(
+            claude_result,
+            BaseException,
+        )
+        and not str(
+            claude_result
+        ).strip()
+    ):
+        errors["claude"] = (
+            "Claude returned an empty result"
+        )
+
+    if (
+        not isinstance(
+            codex_result,
+            BaseException,
+        )
+        and not str(
+            codex_result
+        ).strip()
+    ):
+        errors["codex"] = (
+            "Codex returned an empty result"
         )
 
     if errors:
@@ -413,6 +536,22 @@ Requirements:
         encoding="utf-8",
     )
 
+    (
+        trace_dir
+        / f"iter{iteration}_claude_draft.md"
+    ).write_text(
+        claude_result,
+        encoding="utf-8",
+    )
+
+    (
+        trace_dir
+        / f"iter{iteration}_codex_draft.md"
+    ).write_text(
+        codex_result,
+        encoding="utf-8",
+    )
+
     return {
         "iteration": iteration,
         "claude_result":
@@ -489,9 +628,65 @@ Return ONLY valid JSON:
 Do not use Markdown fences.
 """
 
+    critic_schema = {
+        "type": "object",
+        "properties": {
+            "quality_score": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+            },
+            "critique": {
+                "type": "string",
+            },
+            "missing_evidence": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                },
+            },
+        },
+        "required": [
+            "quality_score",
+            "critique",
+            "missing_evidence",
+        ],
+        "additionalProperties": False,
+    }
+
     raw = await run_claude(
         prompt,
         run_dir,
+        max_turns=3,
+        tool_profile="reasoning",
+        system_prompt=(
+            "You are an independent research "
+            "quality evaluator in an unattended "
+            "software pipeline. Do not use tools. "
+            "Evaluate only the material provided "
+            "in the user prompt."
+        ),
+        json_schema=critic_schema,
+    )
+
+    trace_dir = (
+        run_dir / "trace"
+    )
+
+    trace_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    (
+        trace_dir
+        / (
+            f"critic_iteration_"
+            f"{state['iteration']}_raw.txt"
+        )
+    ).write_text(
+        raw,
+        encoding="utf-8",
     )
 
     data = extract_json(
@@ -718,6 +913,13 @@ Requirements:
     result = await run_claude(
         prompt,
         run_dir,
+        tool_profile="reasoning",
+        system_prompt=(
+            "You are a senior research editor "
+            "working in an unattended pipeline. "
+            "Use only the material supplied in "
+            "the user prompt. Do not use tools."
+        ),
     )
 
     (

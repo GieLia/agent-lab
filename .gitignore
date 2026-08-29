@@ -83,3 +83,7 @@ auth/
 
 # detect-secrets baseline is safe and must be versioned
 !.secrets.baseline
+
+
+# Eval runtime results
+tests/evals/results/
