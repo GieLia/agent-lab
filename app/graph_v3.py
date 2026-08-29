@@ -599,42 +599,94 @@ CODEX REPORT:
 {state["codex_result"]}
 
 
-Evaluate the combined research.
+Evaluate the supplied research only.
 
-Score quality from 0.00 to 1.00.
+Score EACH dimension independently from 0 to 4.
 
-Evaluate:
+General anchors:
 
-- factual support;
-- source quality;
-- source coverage;
-- contradictions;
-- unsupported claims;
-- important unanswered questions;
-- whether additional research would
-  materially improve the result.
+0 = absent, fundamentally wrong, or unsupported
+1 = major deficiencies
+2 = partial or mixed quality
+3 = strong with minor material gaps
+4 = consistently strong and well supported
 
-Return ONLY valid JSON:
+Dimensions:
 
-{{
-  "quality_score": 0.00,
-  "critique": "detailed explanation",
-  "missing_evidence": [
-    "item 1",
-    "item 2"
-  ]
-}}
+factual_support:
+Are important factual claims supported by the supplied material?
 
-Do not use Markdown fences.
+source_quality:
+Are sources appropriate, credible and relevant?
+
+source_coverage:
+Does the research cover the evidence needed for the task?
+
+contradiction_handling:
+Are disagreements, conflicting evidence and alternative explanations handled?
+
+uncertainty_hygiene:
+Are unknowns, assumptions, speculation and evidence gaps clearly separated?
+
+task_completion:
+Does the research actually answer the requested task?
+
+Rules:
+
+- Score each dimension independently.
+- Do not calculate an overall score.
+- Do not infer evidence that is not supplied.
+- Do not reward length by itself.
+- Do not use external tools.
+- Explain each dimension score briefly.
+- Identify remaining missing evidence.
+- Return only the requested structured result.
 """
+
+    rubric_dimensions = (
+        "factual_support",
+        "source_quality",
+        "source_coverage",
+        "contradiction_handling",
+        "uncertainty_hygiene",
+        "task_completion",
+    )
+
+    rubric_item_schema = {
+        "type": "object",
+        "properties": {
+            "score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4,
+            },
+            "reason": {
+                "type": "string",
+                "minLength": 1,
+            },
+        },
+        "required": [
+            "score",
+            "reason",
+        ],
+        "additionalProperties": False,
+    }
 
     critic_schema = {
         "type": "object",
         "properties": {
-            "quality_score": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0,
+            "rubric": {
+                "type": "object",
+                "properties": {
+                    dimension:
+                        rubric_item_schema
+                    for dimension
+                    in rubric_dimensions
+                },
+                "required":
+                    list(rubric_dimensions),
+                "additionalProperties":
+                    False,
             },
             "critique": {
                 "type": "string",
@@ -647,7 +699,7 @@ Do not use Markdown fences.
             },
         },
         "required": [
-            "quality_score",
+            "rubric",
             "critique",
             "missing_evidence",
         ],
@@ -657,7 +709,7 @@ Do not use Markdown fences.
     raw = await run_claude(
         prompt,
         run_dir,
-        max_turns=3,
+        max_turns=5,
         tool_profile="reasoning",
         system_prompt=(
             "You are an independent research "
@@ -693,16 +745,81 @@ Do not use Markdown fences.
         raw
     )
 
-    score = float(
-        data["quality_score"]
+    rubric = data.get(
+        "rubric"
     )
 
-    score = max(
-        0.0,
-        min(
-            score,
-            1.0,
+    if not isinstance(
+        rubric,
+        dict,
+    ):
+        raise ValueError(
+            "Critic returned no valid rubric"
+        )
+
+    rubric_scores = {}
+
+    for dimension in rubric_dimensions:
+
+        item = rubric.get(
+            dimension
+        )
+
+        if not isinstance(
+            item,
+            dict,
+        ):
+            raise ValueError(
+                "Missing rubric dimension: "
+                f"{dimension}"
+            )
+
+        raw_score = item.get(
+            "score"
+        )
+
+        if (
+            isinstance(raw_score, bool)
+            or not isinstance(
+                raw_score,
+                int,
+            )
+            or not 0 <= raw_score <= 4
+        ):
+            raise ValueError(
+                "Invalid rubric score for "
+                f"{dimension}: "
+                f"{raw_score!r}"
+            )
+
+        reason = str(
+            item.get(
+                "reason",
+                "",
+            )
+        ).strip()
+
+        if not reason:
+            raise ValueError(
+                "Missing rubric reason for "
+                f"{dimension}"
+            )
+
+        rubric_scores[
+            dimension
+        ] = raw_score
+
+    score = round(
+        sum(
+            rubric_scores.values()
+        )
+        / (
+            4
+            * len(
+                rubric_dimensions
+            )
         ),
+        6,
     )
 
     critique = str(
@@ -745,6 +862,10 @@ Do not use Markdown fences.
             {
                 "quality_score":
                     score,
+                "rubric":
+                    rubric,
+                "dimension_scores":
+                    rubric_scores,
                 "critique":
                     critique,
                 "missing_evidence":

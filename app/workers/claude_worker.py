@@ -53,14 +53,6 @@ async def run_claude(
             ]
         )
 
-        max_turns_index = command.index(
-            "--max-turns"
-        ) + 1
-
-        command[max_turns_index] = str(
-            min(max_turns, 3)
-        )
-
     elif tool_profile != "default":
         raise ValueError(
             "Unknown CLAUDE_TOOL_PROFILE: "
