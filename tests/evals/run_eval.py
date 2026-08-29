@@ -32,12 +32,23 @@ def load_cases():
     return data["cases"]
 
 
-def run_case(case, max_iterations, threshold, timeout):
+def run_case(
+    case,
+    max_iterations,
+    threshold,
+    timeout,
+    force_iterations=False,
+):
     env = os.environ.copy()
 
     env["TOPIC"] = case["prompt"]
     env["MAX_ITERATIONS"] = str(max_iterations)
     env["QUALITY_THRESHOLD"] = str(threshold)
+    env["FORCE_ITERATIONS"] = (
+        "1"
+        if force_iterations
+        else "0"
+    )
     env["PYTHONUNBUFFERED"] = "1"
 
     started = time.monotonic()
@@ -165,6 +176,14 @@ def main():
         type=int,
         default=1800,
     )
+    parser.add_argument(
+        "--force-iterations",
+        action="store_true",
+        help=(
+            "Eval-only: ignore quality threshold "
+            "until max iterations are completed."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -211,6 +230,7 @@ def main():
             args.max_iterations,
             args.threshold,
             args.timeout,
+            args.force_iterations,
         )
 
         results.append(result)
@@ -235,6 +255,8 @@ def main():
         "created_at": stamp,
         "max_iterations": args.max_iterations,
         "quality_threshold": args.threshold,
+        "force_iterations":
+            args.force_iterations,
         "cases": results,
     }
 

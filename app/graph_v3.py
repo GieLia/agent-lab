@@ -58,6 +58,7 @@ class ResearchState(
     iteration: int
     max_iterations: int
     quality_threshold: float
+    force_iterations: bool
 
     claude_result: str
     codex_result: str
@@ -915,6 +916,38 @@ def route_after_critic(
         "max_iterations"
     ]
 
+    force_iterations = bool(
+        state.get(
+            "force_iterations",
+            False,
+        )
+    )
+
+    if force_iterations:
+
+        if iteration < max_iterations:
+
+            print(
+                f"[{now()}] "
+                f"FORCE RETRY: "
+                f"iteration "
+                f"{iteration}/"
+                f"{max_iterations}"
+            )
+
+            return "research"
+
+        print(
+            f"[{now()}] "
+            f"FORCE STOP: "
+            f"required iterations "
+            f"completed "
+            f"({iteration}/"
+            f"{max_iterations})"
+        )
+
+        return "synthesis"
+
     if score >= threshold:
 
         print(
@@ -1143,6 +1176,21 @@ async def new_run(
         run_id
     )
 
+    force_iterations = (
+        os.getenv(
+            "FORCE_ITERATIONS",
+            "0",
+        )
+        .strip()
+        .lower()
+        in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+    )
+
     initial_state: ResearchState = {
         "topic":
             topic,
@@ -1154,6 +1202,8 @@ async def new_run(
             MAX_ITERATIONS,
         "quality_threshold":
             QUALITY_THRESHOLD,
+        "force_iterations":
+            force_iterations,
         "status":
             "starting",
     }
@@ -1173,6 +1223,8 @@ async def new_run(
                     MAX_ITERATIONS,
                 "quality_threshold":
                     QUALITY_THRESHOLD,
+                "force_iterations":
+                    force_iterations,
                 "checkpoint_db":
                     str(
                         CHECKPOINT_DB
@@ -1222,6 +1274,11 @@ async def new_run(
     print(
         f"QUALITY THRESHOLD: "
         f"{QUALITY_THRESHOLD}"
+    )
+
+    print(
+        f"FORCE ITERATIONS: "
+        f"{force_iterations}"
     )
 
     print(
