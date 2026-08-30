@@ -77,6 +77,33 @@ def now() -> str:
     ).isoformat()
 
 
+def resolve_claude_account(
+    role_env: str,
+) -> str:
+
+    value = (
+        os.getenv(role_env)
+        or os.getenv(
+            "CLAUDE_ACCOUNT"
+        )
+        or "primary"
+    )
+
+    value = value.strip().lower()
+
+    aliases = {
+        "a": "primary",
+        "primary": "primary",
+        "b": "secondary",
+        "secondary": "secondary",
+    }
+
+    return aliases.get(
+        value,
+        value,
+    )
+
+
 def get_run_dir(
     run_id: str,
 ) -> Path:
@@ -1410,6 +1437,36 @@ async def new_run(
                     str(
                         CHECKPOINT_DB
                     ),
+                "runtime": {
+                    "research_claude": {
+                        "provider":
+                            "claude",
+                        "account":
+                            resolve_claude_account(
+                                "CLAUDE_RESEARCH_ACCOUNT"
+                            ),
+                    },
+                    "research_codex": {
+                        "provider":
+                            "codex",
+                    },
+                    "critic": {
+                        "provider":
+                            "claude",
+                        "account":
+                            resolve_claude_account(
+                                "CLAUDE_CRITIC_ACCOUNT"
+                            ),
+                    },
+                    "synthesis": {
+                        "provider":
+                            "claude",
+                        "account":
+                            resolve_claude_account(
+                                "CLAUDE_SYNTHESIS_ACCOUNT"
+                            ),
+                    },
+                },
             },
             indent=2,
             ensure_ascii=False,

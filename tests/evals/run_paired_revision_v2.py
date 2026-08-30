@@ -183,6 +183,33 @@ Rules:
 """
 
 
+def resolve_claude_account() -> str:
+
+    value = (
+        os.getenv(
+            "CLAUDE_EVAL_ACCOUNT"
+        )
+        or os.getenv(
+            "CLAUDE_ACCOUNT"
+        )
+        or "primary"
+    )
+
+    value = value.strip().lower()
+
+    aliases = {
+        "a": "primary",
+        "primary": "primary",
+        "b": "secondary",
+        "secondary": "secondary",
+    }
+
+    return aliases.get(
+        value,
+        value,
+    )
+
+
 async def evaluate_once(
     prompt,
     run_dir,
@@ -193,9 +220,7 @@ async def evaluate_once(
         timeout=300,
         max_turns=5,
         tool_profile="reasoning",
-        account=os.getenv(
-            "CLAUDE_EVAL_ACCOUNT"
-        ),
+        account=resolve_claude_account(),
         system_prompt=(
             "You are a comparative research evaluator. "
             "Do not use tools. Ignore verbosity and "
@@ -451,6 +476,12 @@ async def main():
             args.after,
         "method":
             "paired_comparative_v2",
+        "evaluator": {
+            "provider":
+                "claude",
+            "account":
+                resolve_claude_account(),
+        },
         "position_balancing":
             "alternating_A_B",
         "requested_repeats":
