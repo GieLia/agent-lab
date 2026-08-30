@@ -1,0 +1,35 @@
+[Unit]
+Description=Claude B isolated worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+User=claude-b
+Group=claude-pool
+
+Environment=HOME=/home/claude-b
+Environment=PATH=/home/claude-b/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+WorkingDirectory=/home/claude-b
+
+RuntimeDirectory=claude-b-worker
+RuntimeDirectoryMode=0770
+
+ExecStart=/usr/bin/python3 /opt/claude-b-worker/server.py
+
+Restart=on-failure
+RestartSec=3
+
+UMask=0007
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+
+ReadWritePaths=/home/claude-b
+ReadWritePaths=/run/claude-b-worker
+
+[Install]
+WantedBy=multi-user.target

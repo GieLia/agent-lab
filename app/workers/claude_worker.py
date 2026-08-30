@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import uuid
 
 from pathlib import Path
 
@@ -9,6 +10,20 @@ CLAUDE_BIN = "/home/agent/.local/bin/claude"
 
 CLAUDE_SECONDARY_SOCKET = (
     "/run/claude-b-worker/worker.sock"
+)
+
+CLAUDE_SECONDARY_MAX_REQUEST_BYTES = int(
+    os.getenv(
+        "CLAUDE_SECONDARY_MAX_REQUEST_BYTES",
+        str(2 * 1024 * 1024),
+    )
+)
+
+CLAUDE_SECONDARY_MAX_RESPONSE_BYTES = int(
+    os.getenv(
+        "CLAUDE_SECONDARY_MAX_RESPONSE_BYTES",
+        str(2 * 1024 * 1024),
+    )
 )
 
 
@@ -251,7 +266,14 @@ async def _run_secondary(
             "tool_profile='reasoning'"
         )
 
+    request_id = str(
+        uuid.uuid4()
+    )
+
     request = {
+        "request_id":
+            request_id,
+
         "prompt":
             prompt,
 
@@ -271,10 +293,33 @@ async def _run_secondary(
             json_schema,
     }
 
+    encoded_request = (
+        json.dumps(
+            request,
+            ensure_ascii=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+    if (
+        len(encoded_request)
+        > CLAUDE_SECONDARY_MAX_REQUEST_BYTES
+    ):
+        raise RuntimeError(
+            "Secondary Claude request "
+            f"{request_id} exceeds "
+            f"{CLAUDE_SECONDARY_MAX_REQUEST_BYTES} "
+            "bytes"
+        )
+
     try:
         reader, writer = await asyncio.wait_for(
             asyncio.open_unix_connection(
-                CLAUDE_SECONDARY_SOCKET
+                CLAUDE_SECONDARY_SOCKET,
+                limit=(
+                    CLAUDE_SECONDARY_MAX_RESPONSE_BYTES
+                    + 1
+                ),
             ),
             timeout=10,
         )
@@ -289,26 +334,41 @@ async def _run_secondary(
 
     try:
         writer.write(
-            (
-                json.dumps(
-                    request,
-                    ensure_ascii=False,
-                )
-                + "\n"
-            ).encode("utf-8")
+            encoded_request
         )
 
         await writer.drain()
 
-        line = await asyncio.wait_for(
-            reader.readline(),
-            timeout=timeout + 30,
-        )
+        try:
+            line = await asyncio.wait_for(
+                reader.readline(),
+                timeout=timeout + 30,
+            )
+
+        except ValueError as exc:
+            raise RuntimeError(
+                "Secondary Claude response "
+                f"{request_id} exceeded "
+                f"{CLAUDE_SECONDARY_MAX_RESPONSE_BYTES} "
+                "bytes"
+            ) from exc
 
         if not line:
             raise RuntimeError(
                 "Secondary Claude worker "
-                "returned no response"
+                f"returned no response "
+                f"(request_id={request_id})"
+            )
+
+        if (
+            len(line)
+            > CLAUDE_SECONDARY_MAX_RESPONSE_BYTES
+        ):
+            raise RuntimeError(
+                "Secondary Claude response "
+                f"{request_id} exceeds "
+                f"{CLAUDE_SECONDARY_MAX_RESPONSE_BYTES} "
+                "bytes"
             )
 
         try:
@@ -322,13 +382,35 @@ async def _run_secondary(
         except json.JSONDecodeError as exc:
             raise RuntimeError(
                 "Secondary Claude worker "
-                "returned invalid JSON"
+                "returned invalid JSON "
+                f"(request_id={request_id})"
             ) from exc
+
+        response_request_id = (
+            response.get(
+                "request_id"
+            )
+        )
+
+        # Backward compatible with protocol v1
+        # during rolling deployment.
+        if (
+            response_request_id is not None
+            and response_request_id
+            != request_id
+        ):
+            raise RuntimeError(
+                "Secondary Claude worker "
+                "request_id mismatch: "
+                f"sent={request_id} "
+                f"received={response_request_id}"
+            )
 
         if not response.get("ok"):
             raise RuntimeError(
                 "Secondary Claude worker "
-                "failed:\n"
+                "failed "
+                f"(request_id={request_id}):\n"
                 + str(
                     response.get(
                         "error",
@@ -344,7 +426,8 @@ async def _run_secondary(
         if not result:
             raise RuntimeError(
                 "Secondary Claude worker "
-                "returned an empty result"
+                "returned an empty result "
+                f"(request_id={request_id})"
             )
 
         return str(result)
