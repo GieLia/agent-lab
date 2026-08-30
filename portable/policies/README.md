@@ -1,5 +1,22 @@
 # Policies
 
-Deterministic behavioral and security constraints.
+Provider-neutral deterministic behavioral and security constraints.
 
-Policies are separate from prompts and model-specific configuration.
+Policies define boundaries that profiles and skills must obey.
+
+Current policies:
+
+- research-policy.md
+- evidence-policy.md
+- security-policy.md
+
+Priority principle:
+
+runtime/system constraints
+> policies
+> profiles
+> skills
+> task-specific instructions
+
+A lower-priority layer must not grant a capability prohibited
+by a higher-priority layer.
