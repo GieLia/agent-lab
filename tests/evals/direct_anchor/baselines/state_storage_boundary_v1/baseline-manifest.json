@@ -1,0 +1,12 @@
+{
+  "manifest_version": 1,
+  "case_id": "state_storage_boundary_v1",
+  "run_id": "548e4db6-0a74-48a1-95e8-e4ad91b4bca3",
+  "files": {
+    "tests/evals/direct_anchor/baselines/state_storage_boundary_v1/metadata.json": "a77948de9e7bf1a17a202827b8219c9d958c64fac7bda7e6b12fbc9d3b4b8310",
+    "tests/evals/direct_anchor/baselines/state_storage_boundary_v1/worker-result.json": "e868d3d425606d74560a40726eebbd6789bbd2b431baf32036e6429e2a4854b7",
+    "tests/evals/direct_anchor/baselines/state_storage_boundary_v1/human-evaluation.json": "b9135b75b409696cb7f8f14fdc54ce02e4a4189a5aeff028c4594c7c30b5046e",
+    "tests/evals/direct_anchor/case_v1.json": "572652291c01c4a1a0ddf871be5aad6abf8ad028efb734e84ae5de9db8164965",
+    "tests/evals/direct_anchor/human_reference_v1.json": "b0c364b7ba0fd522e048eb2a13646c2ccad4c3c5a15d1697b21ad127bbe187bb"
+  }
+}

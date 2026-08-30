@@ -1,0 +1,398 @@
+{
+  "account": "secondary",
+  "worker_id": "direct-anchor-researcher-v1",
+  "role": "researcher",
+  "status": "success",
+  "provider": "claude",
+  "model": null,
+  "claims": [
+    {
+      "claim_id": "c1",
+      "text": "The current deployment runs on a single Ubuntu VM with low operational write concurrency.",
+      "claim_type": "fact",
+      "importance": "medium",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c2",
+      "text": "Future plans include several parallel research workers and a human review step.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c3",
+      "text": "A stated platform requirement is that the system must recover after process loss and retain an auditable history of important research state.",
+      "claim_type": "fact",
+      "importance": "critical",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c4",
+      "text": "The graph checkpointer persists graph state only at node boundaries, not at arbitrary points inside node execution.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c5",
+      "text": "If a parallel worker finishes its work inside a research node but the process stops before that node returns successfully, the worker's result is not committed as completed graph state and may be repeated after resume.",
+      "claim_type": "fact",
+      "importance": "critical",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c6",
+      "text": "The current AsyncSqliteSaver is a simple, file-based checkpoint store considered acceptable for a single-host deployment with low write concurrency, but it is not a high-availability store.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c7",
+      "text": "The architecture should provide a migration path away from SQLite if concurrent writers or multiple runtime hosts become material.",
+      "claim_type": "recommendation",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c8",
+      "text": "A PostgreSQL service is already available to the platform.",
+      "claim_type": "fact",
+      "importance": "medium",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c9",
+      "text": "PostgreSQL is recommended for shared transactional operational state once multiple concurrent workers or runtime processes require a common durable store.",
+      "claim_type": "recommendation",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c10",
+      "text": "Durable knowledge is treated as architecturally separate from graph execution checkpoints and is organized under a KnowledgeBundle boundary that keeps LedgerEntry, Evidence, and Source records together.",
+      "claim_type": "fact",
+      "importance": "critical",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c11",
+      "text": "Superseded or retracted knowledge is kept historically traceable rather than being silently deleted.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "c12",
+      "text": "An earlier internal draft proposed Redis as the primary agent state store for simplicity and speed.",
+      "claim_type": "fact",
+      "importance": "medium",
+      "verification_status": "contradicted"
+    },
+    {
+      "claim_id": "c13",
+      "text": "The Redis-as-primary-state-store proposal was superseded after durable restart recovery and audit requirements were clarified; Redis may still be considered only for cache or coordination purposes, not as canonical durable state.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "r1",
+      "text": "Recommendation: adopt a two-tier state architecture — a transient execution/checkpoint store for graph resumability, and a separate durable knowledge store for auditable long-term research findings — because the packet explicitly distinguishes checkpoint state from KnowledgeBundle-based durable knowledge.",
+      "claim_type": "recommendation",
+      "importance": "critical",
+      "verification_status": "unverified"
+    },
+    {
+      "claim_id": "r2",
+      "text": "Recommendation: retain SQLite (AsyncSqliteSaver) for the checkpoint tier only as long as the deployment remains single-host with low write concurrency, and plan a concrete migration to the already-available PostgreSQL service once parallel workers or multi-host runtimes are introduced.",
+      "claim_type": "recommendation",
+      "importance": "high",
+      "verification_status": "unverified"
+    },
+    {
+      "claim_id": "r3",
+      "text": "Recommendation: the node-boundary commit gap (a completed-but-uncommitted worker result being repeated after resume) is a structural checkpointing behavior that persists regardless of backend choice (SQLite or PostgreSQL) and must be addressed separately, e.g. via idempotent/dedupable node-level result handling, since the packet identifies the gap as arising from checkpoint granularity, not backend durability.",
+      "claim_type": "recommendation",
+      "importance": "critical",
+      "verification_status": "unverified"
+    },
+    {
+      "claim_id": "r4",
+      "text": "Recommendation: do not adopt Redis as the canonical durable checkpoint or knowledge store, since that proposal was explicitly superseded after recovery and audit requirements were clarified; Redis should only be considered, if at all, for cache or coordination roles.",
+      "claim_type": "recommendation",
+      "importance": "high",
+      "verification_status": "unverified"
+    },
+    {
+      "claim_id": "r5",
+      "text": "Recommendation: implement the durable knowledge tier (KnowledgeBundle/LedgerEntry/Evidence/Source) as a distinct schema or store from the execution checkpoint tier so that knowledge history and traceability of superseded entries are preserved independently of checkpoint replay or resume behavior.",
+      "claim_type": "recommendation",
+      "importance": "high",
+      "verification_status": "unverified"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "src-requirements-v1",
+      "source_type": "internal",
+      "title": "Current and future platform requirements",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-30",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "current"
+      }
+    },
+    {
+      "source_id": "src-checkpoint-v1",
+      "source_type": "internal",
+      "title": "Observed checkpoint recovery behavior",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-30",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "current"
+      }
+    },
+    {
+      "source_id": "src-sqlite-v1",
+      "source_type": "internal",
+      "title": "SQLite checkpoint assessment",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-30",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "current"
+      }
+    },
+    {
+      "source_id": "src-postgres-v1",
+      "source_type": "internal",
+      "title": "PostgreSQL operational-state note",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-30",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "current"
+      }
+    },
+    {
+      "source_id": "src-knowledge-v1",
+      "source_type": "internal",
+      "title": "Durable knowledge boundary",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-30",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "current"
+      }
+    },
+    {
+      "source_id": "src-redis-old-v1",
+      "source_type": "internal",
+      "title": "Earlier Redis state-store proposal",
+      "url": null,
+      "publisher": "Agent Lab",
+      "published_at": "2026-08-20",
+      "retrieved_at": "2026-08-30T00:00:00Z",
+      "content_hash": null,
+      "metadata": {
+        "status": "superseded"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "e1",
+      "claim_id": "c1",
+      "source_id": "src-requirements-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The current deployment runs on one Ubuntu VM with low operational write concurrency."
+    },
+    {
+      "evidence_id": "e2",
+      "claim_id": "c2",
+      "source_id": "src-requirements-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "Future plans include several parallel research workers and human review."
+    },
+    {
+      "evidence_id": "e3",
+      "claim_id": "c3",
+      "source_id": "src-requirements-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The platform must recover after process loss and retain an auditable history of important research state."
+    },
+    {
+      "evidence_id": "e4",
+      "claim_id": "c4",
+      "source_id": "src-checkpoint-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The graph checkpointer persists graph state at node boundaries."
+    },
+    {
+      "evidence_id": "e5",
+      "claim_id": "c5",
+      "source_id": "src-checkpoint-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "If one parallel worker finishes inside a research node but the process stops before that node returns successfully, that worker result is not committed as completed graph state and may be repeated after resume."
+    },
+    {
+      "evidence_id": "e6",
+      "claim_id": "c6",
+      "source_id": "src-sqlite-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The current AsyncSqliteSaver is simple and file-based and is considered acceptable for a single-host deployment with low write concurrency. It is not treated as a high-availability store."
+    },
+    {
+      "evidence_id": "e7",
+      "claim_id": "c7",
+      "source_id": "src-sqlite-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The architecture should provide a migration path if concurrent writers or multiple runtime hosts become material."
+    },
+    {
+      "evidence_id": "e8",
+      "claim_id": "c8",
+      "source_id": "src-postgres-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "A PostgreSQL service is already available to the platform."
+    },
+    {
+      "evidence_id": "e9",
+      "claim_id": "c9",
+      "source_id": "src-postgres-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "The architecture note recommends PostgreSQL for shared transactional operational state when multiple concurrent workers or runtime processes require a common durable store."
+    },
+    {
+      "evidence_id": "e10",
+      "claim_id": "c10",
+      "source_id": "src-knowledge-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "Durable knowledge is separate from graph execution checkpoints. Durable knowledge uses a KnowledgeBundle boundary that preserves LedgerEntry, Evidence and Source records together."
+    },
+    {
+      "evidence_id": "e11",
+      "claim_id": "c11",
+      "source_id": "src-knowledge-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "Superseded or retracted knowledge remains historically traceable rather than being silently deleted."
+    },
+    {
+      "evidence_id": "e12",
+      "claim_id": "c12",
+      "source_id": "src-redis-old-v1",
+      "relationship": "contradicts",
+      "strength": "strong",
+      "notes": "This earlier claim is explicitly marked superseded by the same source and by src-postgres-v1/src-sqlite-v1's current guidance.",
+      "excerpt": "An earlier draft proposed Redis as the primary agent state store for simplicity and speed."
+    },
+    {
+      "evidence_id": "e13",
+      "claim_id": "c13",
+      "source_id": "src-redis-old-v1",
+      "relationship": "supports",
+      "strength": "strong",
+      "excerpt": "That proposal was superseded after durable restart recovery and audit requirements were clarified. Redis may still be considered for cache or coordination, but this source no longer recommends it as canonical durable state."
+    },
+    {
+      "evidence_id": "e14",
+      "claim_id": "r1",
+      "source_id": "src-knowledge-v1",
+      "relationship": "context",
+      "strength": "moderate",
+      "excerpt": "Durable knowledge is separate from graph execution checkpoints."
+    },
+    {
+      "evidence_id": "e15",
+      "claim_id": "r1",
+      "source_id": "src-checkpoint-v1",
+      "relationship": "context",
+      "strength": "moderate",
+      "excerpt": "The graph checkpointer persists graph state at node boundaries."
+    },
+    {
+      "evidence_id": "e16",
+      "claim_id": "r2",
+      "source_id": "src-sqlite-v1",
+      "relationship": "context",
+      "strength": "moderate",
+      "excerpt": "The architecture should provide a migration path if concurrent writers or multiple runtime hosts become material."
+    },
+    {
+      "evidence_id": "e17",
+      "claim_id": "r2",
+      "source_id": "src-postgres-v1",
+      "relationship": "context",
+      "strength": "moderate",
+      "excerpt": "A PostgreSQL service is already available to the platform."
+    },
+    {
+      "evidence_id": "e18",
+      "claim_id": "r3",
+      "source_id": "src-checkpoint-v1",
+      "relationship": "context",
+      "strength": "strong",
+      "excerpt": "that worker result is not committed as completed graph state and may be repeated after resume."
+    },
+    {
+      "evidence_id": "e19",
+      "claim_id": "r4",
+      "source_id": "src-redis-old-v1",
+      "relationship": "context",
+      "strength": "strong",
+      "excerpt": "Redis may still be considered for cache or coordination, but this source no longer recommends it as canonical durable state."
+    },
+    {
+      "evidence_id": "e20",
+      "claim_id": "r5",
+      "source_id": "src-knowledge-v1",
+      "relationship": "context",
+      "strength": "moderate",
+      "excerpt": "KnowledgeBundle boundary that preserves LedgerEntry, Evidence and Source records together."
+    },
+    {
+      "evidence_id": "e21",
+      "claim_id": "r5",
+      "source_id": "src-postgres-v1",
+      "relationship": "context",
+      "strength": "weak",
+      "excerpt": "A PostgreSQL service is already available to the platform."
+    }
+  ],
+  "gaps": [
+    "The packet does not confirm whether a PostgreSQL-backed checkpointer implementation for the graph framework has been evaluated or is available, only that a PostgreSQL service exists.",
+    "No mechanism is specified for solving the node-boundary duplication problem itself (e.g., idempotency keys, dedup logic, or sub-node checkpointing) — only that the gap exists under the current SQLite checkpointer; it's unclear if PostgreSQL migration alone resolves it.",
+    "No concrete schema, table design, or storage engine is specified for the KnowledgeBundle/LedgerEntry/Evidence/Source durable-knowledge tier.",
+    "No defined threshold (e.g., number of concurrent workers, specific host count) is given for when migration from SQLite to PostgreSQL should be triggered.",
+    "The mechanics of 'historical traceability' for superseded/retracted knowledge (e.g., versioning, soft-delete, append-only ledger) are not detailed in the packet.",
+    "Redis's potential future role in 'cache or coordination' is mentioned but not scoped — it is unclear what specific functions (e.g., locking, pub/sub, ephemeral cache) it would be responsible for.",
+    "The packet does not state whether audit-trail requirements apply to the execution/checkpoint tier itself, or only to the durable knowledge tier — this leaves the audit scope for checkpoint state ambiguous.",
+    "No information is given on how human review state (mentioned as a future requirement) would be persisted or reconciled with either the checkpoint tier or the knowledge tier."
+  ],
+  "notes": "Sintezė (r1–r5) sudaryta remiantis pateiktu source packet turiniu ir yra šio tyrėjo interpretacija/rekomendacija, o ne tiesiogiai cituojama šaltinių formuluotė; jos verification_status pažymėtas kaip unverified, nes tai išvestinės rekomendacijos, o ne tiesioginiai šaltinio teiginiai. Prieštaravimas tarp src-redis-old-v1 (superseded) ir dabartinių src-sqlite-v1/src-postgres-v1 rekomendacijų išsaugotas sąmoningai — Redis pasiūlymas nepaverstas dabartine autoritetinga rekomendacija."
+}

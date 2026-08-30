@@ -1,0 +1,82 @@
+{
+  "evaluation_version": 1,
+  "case_id": "state_storage_boundary_v1",
+  "run_id": "548e4db6-0a74-48a1-95e8-e4ad91b4bca3",
+  "evaluator_type": "human-anchor",
+  "verdict": "pass_with_findings",
+  "criteria_total": 7,
+  "criteria_passed": 7,
+  "criteria": [
+    {
+      "id": "A1",
+      "status": "pass",
+      "claim_refs": ["c10", "r1", "r5"],
+      "description": "Runtime checkpoint state is separated from durable knowledge."
+    },
+    {
+      "id": "A2",
+      "status": "pass",
+      "claim_refs": ["c4", "c5", "r3"],
+      "description": "Node-boundary checkpointing does not preserve a completed worker result inside an unfinished node."
+    },
+    {
+      "id": "A3",
+      "status": "pass",
+      "claim_refs": ["c6", "r2"],
+      "description": "SQLite is accepted for the current single-host low-write-concurrency baseline."
+    },
+    {
+      "id": "A4",
+      "status": "pass",
+      "claim_refs": ["c7", "c8", "c9", "r2"],
+      "description": "A migration path toward PostgreSQL is identified when concurrency or runtime distribution becomes material."
+    },
+    {
+      "id": "A5",
+      "status": "pass",
+      "claim_refs": ["c13", "r4"],
+      "description": "The superseded Redis proposal is not treated as current architecture authority."
+    },
+    {
+      "id": "A6",
+      "status": "pass",
+      "claim_refs": ["c5", "r3"],
+      "description": "Worker-level result persistence remains an explicit reliability gap."
+    },
+    {
+      "id": "A7",
+      "status": "pass",
+      "claim_refs": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "r1", "r2", "r3", "r4", "r5"],
+      "description": "Claim-Evidence-Source traceability and explicit uncertainty are preserved."
+    }
+  ],
+  "findings": [
+    {
+      "id": "HAF-001",
+      "severity": "medium",
+      "category": "evidence-semantics",
+      "claim_id": "c12",
+      "evidence_id": "e12",
+      "issue": "The historical claim that an earlier draft proposed Redis is directly supported by the excerpt, but the result marks the evidence relationship and claim verification state as contradicted. Supersession of a proposal does not contradict the historical fact that the proposal existed.",
+      "baseline_action": "Preserve the defect in the frozen baseline and require later systems to handle source lifecycle separately from factual verification."
+    },
+    {
+      "id": "HAF-002",
+      "severity": "low",
+      "category": "inference-scope",
+      "claim_id": "r3",
+      "issue": "The statement that the node-boundary gap persists regardless of checkpoint backend and the suggested idempotency/dedup mechanisms go beyond the supplied packet.",
+      "baseline_action": "Accept as an explicitly unverified recommendation; later systems should distinguish sourced facts from architectural inference at finer granularity."
+    },
+    {
+      "id": "HAF-003",
+      "severity": "medium",
+      "category": "provenance",
+      "issue": "The exact resolved Claude model is not captured; metadata.model is null.",
+      "baseline_action": "Do not regenerate this baseline. Capture exact resolved model provenance in future evaluation runners."
+    }
+  ],
+  "baseline_locked": true,
+  "regeneration_allowed": false,
+  "notes": "This evaluation freezes the first successfully completed direct research baseline. Future graph systems must be compared against this artifact rather than regenerating the direct baseline."
+}

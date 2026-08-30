@@ -1,0 +1,20 @@
+{
+  "run_id": "548e4db6-0a74-48a1-95e8-e4ad91b4bca3",
+  "case_id": "state_storage_boundary_v1",
+  "case_version": 1,
+  "case_sha256": "572652291c01c4a1a0ddf871be5aad6abf8ad028efb734e84ae5de9db8164965",
+  "created_at": "2026-08-30T20:36:45.067629+00:00",
+  "provider": "claude",
+  "account": "secondary",
+  "model": null,
+  "model_note": "Exact resolved model is not exposed by the current run_claude abstraction.",
+  "tool_profile": "reasoning",
+  "external_tools": false,
+  "model_invocations": 1,
+  "max_turns": 5,
+  "orchestration": "none",
+  "critic": false,
+  "evidence_verifier": false,
+  "synthesizer": false,
+  "result_file": "tests/evals/results/direct_anchor/548e4db6-0a74-48a1-95e8-e4ad91b4bca3/worker-result.json"
+}
