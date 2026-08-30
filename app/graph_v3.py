@@ -707,20 +707,187 @@ Rules:
         "additionalProperties": False,
     }
 
-    raw = await run_claude(
-        prompt,
-        run_dir,
-        max_turns=5,
-        tool_profile="reasoning",
-        system_prompt=(
-            "You are an independent research "
-            "quality evaluator in an unattended "
-            "software pipeline. Do not use tools. "
-            "Evaluate only the material provided "
-            "in the user prompt."
-        ),
-        json_schema=critic_schema,
+    structured_mode = (
+        "primary_nested_v1"
     )
+
+    try:
+        raw = await run_claude(
+            prompt,
+            run_dir,
+            max_turns=5,
+            tool_profile="reasoning",
+            system_prompt=(
+                "You are an independent research "
+                "quality evaluator in an unattended "
+                "software pipeline. Do not use tools. "
+                "Evaluate only the material provided "
+                "in the user prompt."
+            ),
+            json_schema=critic_schema,
+        )
+
+    except RuntimeError as exc:
+
+        error_text = str(exc)
+
+        structured_failure = (
+            "structured_output_retry_exhausted"
+            in error_text
+            or
+            "error_max_structured_output_retries"
+            in error_text
+        )
+
+        if not structured_failure:
+            raise
+
+        trace_dir = (
+            run_dir / "trace"
+        )
+
+        trace_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        (
+            trace_dir
+            / (
+                f"critic_iteration_"
+                f"{state['iteration']}_"
+                f"primary_error.txt"
+            )
+        ).write_text(
+            error_text,
+            encoding="utf-8",
+        )
+
+        print(
+            f"[{now()}] "
+            "Critic structured output failed; "
+            "retrying with flat fallback schema..."
+        )
+
+        fallback_schema = {
+            "type": "object",
+            "properties": {
+                dimension: {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4,
+                }
+                for dimension
+                in rubric_dimensions
+            },
+            "required":
+                list(rubric_dimensions),
+            "additionalProperties":
+                False,
+        }
+
+        fallback_schema[
+            "properties"
+        ]["critique"] = {
+            "type": "string",
+        }
+
+        fallback_schema[
+            "properties"
+        ]["missing_evidence"] = {
+            "type": "array",
+            "items": {
+                "type": "string",
+            },
+        }
+
+        fallback_schema[
+            "required"
+        ].extend(
+            [
+                "critique",
+                "missing_evidence",
+            ]
+        )
+
+        fallback_prompt = (
+            prompt
+            + """
+
+STRUCTURED OUTPUT FALLBACK:
+
+Return only six integer rubric scores,
+critique, and missing_evidence.
+
+Do not return per-dimension reason objects.
+Do not calculate the overall quality score.
+"""
+        )
+
+        fallback_raw = await run_claude(
+            fallback_prompt,
+            run_dir,
+            max_turns=3,
+            tool_profile="reasoning",
+            system_prompt=(
+                "Return only the requested flat "
+                "structured evaluation. "
+                "Do not use tools."
+            ),
+            json_schema=fallback_schema,
+        )
+
+        (
+            trace_dir
+            / (
+                f"critic_iteration_"
+                f"{state['iteration']}_"
+                f"fallback_raw.txt"
+            )
+        ).write_text(
+            fallback_raw,
+            encoding="utf-8",
+        )
+
+        fallback_data = extract_json(
+            fallback_raw
+        )
+
+        normalized = {
+            "rubric": {
+                dimension: {
+                    "score":
+                        fallback_data[
+                            dimension
+                        ],
+                    "reason": (
+                        "Flat structured fallback; "
+                        "see overall critique."
+                    ),
+                }
+                for dimension
+                in rubric_dimensions
+            },
+            "critique":
+                fallback_data.get(
+                    "critique",
+                    "",
+                ),
+            "missing_evidence":
+                fallback_data.get(
+                    "missing_evidence",
+                    [],
+                ),
+        }
+
+        raw = json.dumps(
+            normalized,
+            ensure_ascii=False,
+        )
+
+        structured_mode = (
+            "flat_fallback_v1"
+        )
 
     trace_dir = (
         run_dir / "trace"
@@ -863,6 +1030,8 @@ Rules:
             {
                 "quality_score":
                     score,
+                "structured_mode":
+                    structured_mode,
                 "rubric":
                     rubric,
                 "dimension_scores":
@@ -1385,6 +1554,175 @@ async def new_run(
     )
 
 
+async def resume_run(
+    graph,
+    run_id: str,
+):
+
+    config = {
+        "configurable": {
+            "thread_id":
+                run_id
+        }
+    }
+
+    snapshot = await graph.aget_state(
+        config
+    )
+
+    if not snapshot.values:
+
+        raise RuntimeError(
+            "No checkpoint found for "
+            f"RUN_ID={run_id}"
+        )
+
+    if not snapshot.next:
+
+        print(
+            f"RUN_ID={run_id} "
+            "has no pending graph work."
+        )
+
+        return
+
+    print()
+    print("=" * 70)
+    print("RESUMING CHECKPOINT")
+    print("=" * 70)
+
+    print(
+        "RUN ID:",
+        run_id,
+    )
+
+    print(
+        "ITERATION:",
+        snapshot.values.get(
+            "iteration"
+        ),
+    )
+
+    print(
+        "STATUS:",
+        snapshot.values.get(
+            "status"
+        ),
+    )
+
+    print(
+        "NEXT:",
+        snapshot.next,
+    )
+
+    print()
+
+    try:
+
+        await graph.ainvoke(
+            None,
+            config=config,
+        )
+
+    except Exception as exc:
+
+        snapshot = await graph.aget_state(
+            config
+        )
+
+        state = dict(
+            snapshot.values
+        )
+
+        write_status(
+            state,
+            "failed",
+            {
+                "error":
+                    str(exc),
+                "resumed":
+                    True,
+            },
+        )
+
+        print()
+        print("=" * 70)
+        print("RESUME FAILED")
+        print("=" * 70)
+
+        print(
+            "RUN ID:",
+            run_id,
+        )
+
+        print(
+            "NEXT:",
+            snapshot.next,
+        )
+
+        print(
+            "ERROR:",
+            exc,
+        )
+
+        raise
+
+    snapshot = await graph.aget_state(
+        config
+    )
+
+    state = dict(
+        snapshot.values
+    )
+
+    write_status(
+        state,
+        "finished",
+        {
+            "finished":
+                True,
+            "resumed":
+                True,
+        },
+    )
+
+    print()
+    print("=" * 70)
+    print("RESUME FINISHED")
+    print("=" * 70)
+
+    print(
+        "RUN ID:",
+        run_id,
+    )
+
+    print(
+        "ITERATION:",
+        state.get(
+            "iteration"
+        ),
+    )
+
+    print(
+        "QUALITY:",
+        state.get(
+            "quality_score"
+        ),
+    )
+
+    print(
+        "STATUS:",
+        state.get(
+            "status"
+        ),
+    )
+
+    print(
+        "NEXT:",
+        snapshot.next,
+    )
+
+
 async def show_state(
     graph,
     run_id: str,
@@ -1483,6 +1821,19 @@ async def main():
             await show_state(
                 graph,
                 inspect_run,
+            )
+
+            return
+
+        resume_run_id = os.getenv(
+            "RESUME_RUN"
+        )
+
+        if resume_run_id:
+
+            await resume_run(
+                graph,
+                resume_run_id,
             )
 
             return
