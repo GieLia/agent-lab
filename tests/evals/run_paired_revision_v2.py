@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import os
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -192,6 +193,9 @@ async def evaluate_once(
         timeout=300,
         max_turns=5,
         tool_profile="reasoning",
+        account=os.getenv(
+            "CLAUDE_EVAL_ACCOUNT"
+        ),
         system_prompt=(
             "You are a comparative research evaluator. "
             "Do not use tools. Ignore verbosity and "

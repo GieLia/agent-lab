@@ -387,6 +387,9 @@ Requirements:
         claude_prompt,
         run_dir,
         tool_profile="reasoning",
+        account=os.getenv(
+            "CLAUDE_RESEARCH_ACCOUNT"
+        ),
     )
 
     codex_task = run_codex(
@@ -717,6 +720,9 @@ Rules:
             run_dir,
             max_turns=5,
             tool_profile="reasoning",
+            account=os.getenv(
+                "CLAUDE_CRITIC_ACCOUNT"
+            ),
             system_prompt=(
                 "You are an independent research "
                 "quality evaluator in an unattended "
@@ -829,6 +835,9 @@ Do not calculate the overall quality score.
             run_dir,
             max_turns=3,
             tool_profile="reasoning",
+            account=os.getenv(
+                "CLAUDE_CRITIC_ACCOUNT"
+            ),
             system_prompt=(
                 "Return only the requested flat "
                 "structured evaluation. "
@@ -1237,6 +1246,9 @@ Requirements:
         prompt,
         run_dir,
         tool_profile="reasoning",
+        account=os.getenv(
+            "CLAUDE_SYNTHESIS_ACCOUNT"
+        ),
         system_prompt=(
             "You are a senior research editor "
             "working in an unattended pipeline. "
