@@ -1,0 +1,12 @@
+{
+  "case_id": "state_storage_boundary_v1",
+  "required_anchor_points": [
+    "Separate runtime checkpoint state from durable knowledge.",
+    "Recognize that node-level checkpointing does not preserve a completed worker result inside an unfinished node.",
+    "SQLite is acceptable for the current single-host low-concurrency baseline.",
+    "Provide a migration path toward PostgreSQL when concurrent writers or multiple runtime processes become material.",
+    "Do not treat the superseded Redis proposal as current architecture authority.",
+    "Identify worker-level result persistence as a remaining reliability gap.",
+    "Preserve Claim-Evidence-Source traceability and uncertainty."
+  ]
+}

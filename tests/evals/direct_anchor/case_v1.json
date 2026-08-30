@@ -1,0 +1,111 @@
+{
+  "case_id": "state_storage_boundary_v1",
+  "version": 1,
+  "objective": "Remdamasis tik pateiktu source packet, rekomenduok būsenos saugojimo architektūrą research-agent platformai. Sistema turi atsigauti po proceso nutrūkimo, išlaikyti audit trail ir aiškiai atskirti vykdymo checkpoint būseną nuo ilgalaikių žinių.",
+  "constraints": [
+    "Use only the supplied source packet.",
+    "Do not use external knowledge.",
+    "Do not invent sources.",
+    "Preserve contradictions and superseded information.",
+    "Return granular claims linked to evidence.",
+    "Explicitly identify remaining gaps."
+  ],
+  "source_packet": [
+    {
+      "source": {
+        "source_id": "src-requirements-v1",
+        "source_type": "internal",
+        "title": "Current and future platform requirements",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-30",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "current"
+        }
+      },
+      "content": "The current deployment runs on one Ubuntu VM with low operational write concurrency. Future plans include several parallel research workers and human review. The platform must recover after process loss and retain an auditable history of important research state."
+    },
+    {
+      "source": {
+        "source_id": "src-checkpoint-v1",
+        "source_type": "internal",
+        "title": "Observed checkpoint recovery behavior",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-30",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "current"
+        }
+      },
+      "content": "The graph checkpointer persists graph state at node boundaries. If one parallel worker finishes inside a research node but the process stops before that node returns successfully, that worker result is not committed as completed graph state and may be repeated after resume."
+    },
+    {
+      "source": {
+        "source_id": "src-sqlite-v1",
+        "source_type": "internal",
+        "title": "SQLite checkpoint assessment",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-30",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "current"
+        }
+      },
+      "content": "The current AsyncSqliteSaver is simple and file-based and is considered acceptable for a single-host deployment with low write concurrency. It is not treated as a high-availability store. The architecture should provide a migration path if concurrent writers or multiple runtime hosts become material."
+    },
+    {
+      "source": {
+        "source_id": "src-postgres-v1",
+        "source_type": "internal",
+        "title": "PostgreSQL operational-state note",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-30",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "current"
+        }
+      },
+      "content": "A PostgreSQL service is already available to the platform. The architecture note recommends PostgreSQL for shared transactional operational state when multiple concurrent workers or runtime processes require a common durable store."
+    },
+    {
+      "source": {
+        "source_id": "src-knowledge-v1",
+        "source_type": "internal",
+        "title": "Durable knowledge boundary",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-30",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "current"
+        }
+      },
+      "content": "Durable knowledge is separate from graph execution checkpoints. Durable knowledge uses a KnowledgeBundle boundary that preserves LedgerEntry, Evidence and Source records together. Superseded or retracted knowledge remains historically traceable rather than being silently deleted."
+    },
+    {
+      "source": {
+        "source_id": "src-redis-old-v1",
+        "source_type": "internal",
+        "title": "Earlier Redis state-store proposal",
+        "url": null,
+        "publisher": "Agent Lab",
+        "published_at": "2026-08-20",
+        "retrieved_at": "2026-08-30T00:00:00Z",
+        "content_hash": null,
+        "metadata": {
+          "status": "superseded"
+        }
+      },
+      "content": "An earlier draft proposed Redis as the primary agent state store for simplicity and speed. That proposal was superseded after durable restart recovery and audit requirements were clarified. Redis may still be considered for cache or coordination, but this source no longer recommends it as canonical durable state."
+    }
+  ]
+}
