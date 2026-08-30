@@ -6,7 +6,8 @@
   "required": [
     "entry_id",
     "created_at",
-    "claim"
+    "claim",
+    "evidence_ids"
   ],
   "properties": {
     "entry_id": {
@@ -30,7 +31,9 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "minItems": 1,
+      "uniqueItems": true
     },
     "supersedes": {
       "type": [
@@ -40,14 +43,100 @@
     },
     "status": {
       "type": "string",
+      "description": "Knowledge-record lifecycle state. This is independent from claim.verification_status.",
       "enum": [
         "active",
         "superseded",
-        "disputed",
+        "under_review",
         "retracted"
       ],
       "default": "active"
+    },
+    "retraction": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorized_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorization_basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorized_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "reason",
+        "authorized_by",
+        "authorization_basis",
+        "authorized_at"
+      ],
+      "additionalProperties": false
+    },
+    "superseded_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional forward pointer to the durable entry that superseded this record."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "retracted"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "retraction"
+        ],
+        "properties": {
+          "retraction": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "retraction": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "retraction"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "retracted"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    }
+  ],
+  "x-version": 1
 }

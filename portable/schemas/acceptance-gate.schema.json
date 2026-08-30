@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "acceptance-gate.schema.json",
+  "title": "AcceptanceGate",
+  "type": "object",
+  "required": [
+    "gate_id",
+    "mission_id",
+    "decision",
+    "accepted_worker_ids",
+    "accepted_claim_ids",
+    "rejected_claim_ids",
+    "decided_by",
+    "rationale",
+    "created_at",
+    "rejected_worker_ids"
+  ],
+  "properties": {
+    "gate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "partial",
+        "rejected"
+      ]
+    },
+    "accepted_worker_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "accepted_claim_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "rejected_claim_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "decided_by": {
+      "type": "object",
+      "required": [
+        "actor_type",
+        "actor_id"
+      ],
+      "properties": {
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "research-lead",
+            "human",
+            "runtime"
+          ]
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rejected_worker_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-version": 1,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "accepted"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "accepted_worker_ids": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "accepted_claim_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "properties": {
+              "rejected_worker_ids": {
+                "maxItems": 0
+              },
+              "rejected_claim_ids": {
+                "maxItems": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "partial"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "accepted_worker_ids": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "accepted_claim_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "rejected_worker_ids": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "rejected_claim_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "decision": {
+            "const": "rejected"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "then": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "rejected_worker_ids": {
+                    "minItems": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "rejected_claim_ids": {
+                    "minItems": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "properties": {
+              "accepted_worker_ids": {
+                "maxItems": 0
+              },
+              "accepted_claim_ids": {
+                "maxItems": 0
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

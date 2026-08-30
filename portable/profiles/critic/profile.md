@@ -47,7 +47,7 @@ Structured critique containing:
 
 ## Allowed Skills
 
-Evaluation and critique only.
+- critique
 
 ## Allowed Tools
 

@@ -63,3 +63,13 @@ Synthesis is complete when:
 - major claims remain evidence traceable;
 - contradictions and gaps are represented;
 - unsupported certainty has not been introduced.
+
+## Acceptance Gate Requirement
+
+The Synthesizer may consume only material allowed
+by the supplied AcceptanceGate.
+
+For a partial decision, only accepted worker or claim
+identifiers may contribute factual material.
+
+A rejected gate is not valid synthesis input.

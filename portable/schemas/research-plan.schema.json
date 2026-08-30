@@ -6,7 +6,8 @@
   "required": [
     "objective",
     "research_questions",
-    "workstreams"
+    "workstreams",
+    "retry_budget"
   ],
   "properties": {
     "objective": {
@@ -58,7 +59,35 @@
       "items": {
         "type": "string"
       }
+    },
+    "retry_budget": {
+      "type": "object",
+      "required": [
+        "max_total_retries",
+        "max_retries_per_workstream",
+        "on_exhaustion"
+      ],
+      "properties": {
+        "max_total_retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_retries_per_workstream": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "on_exhaustion": {
+          "type": "string",
+          "enum": [
+            "escalate",
+            "synthesize_with_gaps",
+            "fail"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "x-version": 1
 }

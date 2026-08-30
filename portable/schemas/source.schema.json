@@ -64,5 +64,6 @@
       "additionalProperties": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "x-version": 1
 }

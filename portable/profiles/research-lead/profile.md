@@ -42,10 +42,20 @@ May also produce:
 
 ## Allowed Skills
 
-- web-research planning;
-- source-verification planning;
-- synthesis planning;
-- knowledge-update planning.
+- acceptance-gating
+
+Research planning and delegation are responsibilities
+of this profile and do not grant execution of worker skills.
+
+The Research Lead may delegate:
+
+- web-research;
+- source-verification;
+- synthesis;
+- knowledge-update.
+
+Delegation does not grant the Research Lead the tools
+or execution capabilities of those skills.
 
 ## Allowed Tools
 
@@ -78,3 +88,31 @@ Planning is complete when:
 - workstreams have clear objectives;
 - major dependencies are known;
 - completion or stop conditions are defined.
+
+## Acceptance Gate
+
+The Research Lead produces an AcceptanceGate before synthesis.
+
+The gate records which WorkerResults or Claim objects
+are accepted, partially accepted, or rejected.
+
+Critic output informs this decision but does not
+automatically constitute acceptance.
+
+A rejected gate must not proceed to synthesis.
+
+## Mission Retry Budget
+
+The Research Lead owns the mission-level retry budget
+defined by ResearchPlan.retry_budget.
+
+Per-skill retry conditions do not override this budget.
+
+When the budget is exhausted, the Research Lead must
+apply the configured outcome:
+
+- escalate;
+- synthesize_with_gaps;
+- fail.
+
+A worker must not create an unbounded retry loop.

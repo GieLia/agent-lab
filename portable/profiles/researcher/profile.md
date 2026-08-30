@@ -42,7 +42,6 @@ The result must include:
 ## Allowed Skills
 
 - web-research
-- source-verification when explicitly delegated
 
 ## Allowed Tools
 

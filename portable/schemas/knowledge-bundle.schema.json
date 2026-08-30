@@ -1,60 +1,48 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "research-report.schema.json",
-  "title": "ResearchReport",
+  "$id": "knowledge-bundle.schema.json",
+  "title": "KnowledgeBundle",
   "type": "object",
   "required": [
-    "topic",
-    "summary",
-    "claims",
+    "bundle_id",
+    "created_at",
+    "ledger_entries",
     "sources",
-    "evidence",
-    "remaining_gaps"
+    "evidence"
   ],
   "properties": {
-    "topic": {
+    "bundle_id": {
       "type": "string",
       "minLength": 1
     },
-    "summary": {
+    "created_at": {
       "type": "string",
       "minLength": 1
     },
-    "claims": {
+    "ledger_entries": {
       "type": "array",
+      "minItems": 1,
       "items": {
-        "$ref": "claim.schema.json"
+        "$ref": "ledger-entry.schema.json"
       }
     },
     "sources": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "$ref": "source.schema.json"
       }
     },
     "evidence": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "$ref": "evidence.schema.json"
       }
     },
-    "contradictions": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "remaining_gaps": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "recommended_next_questions": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "additionalProperties": false,

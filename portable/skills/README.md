@@ -6,6 +6,9 @@ A skill describes HOW a task should be performed.
 
 Current skills:
 
+- acceptance-gating
+- critique
+
 - web-research
 - source-verification
 - synthesis

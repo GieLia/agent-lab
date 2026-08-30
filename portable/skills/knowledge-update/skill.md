@@ -24,8 +24,14 @@ Optional:
 
 ## Outputs
 
-One or more proposed LedgerEntry objects or an explicit
-no-update decision.
+Primary durable output:
+
+- KnowledgeBundle containing LedgerEntry, Source,
+  and Evidence records required for durable provenance.
+
+Alternatively:
+
+- an explicit no-update decision with reason.
 
 ## Procedure
 
@@ -116,7 +122,8 @@ Stop when every candidate has a clear outcome:
 
 - add;
 - update/supersede;
-- preserve disputed;
+- preserve under_review;
+- retract with authorization;
 - no-update.
 
 ## Prohibited Behavior
@@ -135,3 +142,75 @@ Do not:
 - research-policy.md
 - evidence-policy.md
 - security-policy.md
+
+## Durable Persistence Contract
+
+A LedgerEntry must not be persisted with evidence_ids
+that cannot be resolved after the originating run is gone.
+
+Durable knowledge updates therefore use KnowledgeBundle.
+
+The bundle preserves:
+
+- LedgerEntry objects;
+- the Evidence records referenced by those entries;
+- the Source records referenced by that evidence.
+
+The durable storage implementation must reject a bundle
+containing unresolved evidence or source references.
+
+## Ledger Lifecycle
+
+LedgerEntry.status is a record-lifecycle state:
+
+active:
+the durable record is currently usable.
+
+superseded:
+a newer durable entry replaces this entry while history
+is preserved.
+
+under_review:
+the record remains preserved but must not be treated as
+settled durable knowledge until review completes.
+
+retracted:
+the record is explicitly marked unusable because it was
+created in error, its provenance became invalid, or another
+authorized retraction condition applies.
+
+Ledger lifecycle does not replace or upgrade
+Claim.verification_status.
+
+## Retraction Authorization
+
+Retraction is not deletion.
+
+A retracted entry remains traceable but must not be used
+as active knowledge.
+
+Retraction requires an explicit authorization record
+containing:
+
+- reason;
+- authorized_by;
+- authorization_basis;
+- authorized_at.
+
+Authorization must come from a human gate or an explicitly
+defined runtime policy. A model must not unilaterally
+retract durable knowledge.
+
+## Supersession Traceability
+
+When one durable entry replaces another:
+
+- the newer entry may set supersedes to the older entry_id;
+- the older entry may set superseded_by to the newer entry_id;
+- the older entry remains preserved with status=superseded.
+
+Implementations must not create contradictory
+supersession chains silently.
+
+Supersession is record lifecycle metadata and does not
+change Claim.verification_status by itself.

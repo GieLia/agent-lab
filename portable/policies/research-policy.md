@@ -101,3 +101,20 @@ produces the final report from supplied and accepted evidence.
 Research Lead:
 plans work, delegates tasks, evaluates coverage, and determines
 whether targeted additional work is required.
+
+## Mission Retry Budget
+
+Every executable ResearchPlan must define a finite
+mission-level retry budget.
+
+The budget limits:
+
+- total retries across the mission;
+- retries for an individual workstream;
+- behavior when the budget is exhausted.
+
+Per-skill Retry Conditions explain when a retry is
+justified but never grant additional retry budget.
+
+Budget exhaustion must lead to the configured
+escalation, synthesis-with-gaps, or failure outcome.

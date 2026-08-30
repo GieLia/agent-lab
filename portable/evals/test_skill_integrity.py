@@ -5,6 +5,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = ROOT / "skills"
 
 EXPECTED = {
+    "acceptance-gating",
+    "critique",
     "web-research",
     "source-verification",
     "synthesis",
@@ -171,6 +173,53 @@ def check_knowledge_contract():
     )
 
 
+def check_acceptance_contract():
+    text = read(
+        "acceptance-gating"
+    ).lower()
+
+    required = [
+        "eligible for synthesis",
+        "accepted:",
+        "partial:",
+        "rejected:",
+        "critic output does not automatically",
+        "preserve verification state",
+        "security-policy violations are blocking",
+        "researchplan.retry_budget",
+        "internally contradictory gate",
+    ]
+
+    for value in required:
+        assert value in text, value
+
+    print(
+        "ACCEPTANCE_GATING_CONTRACT_OK"
+    )
+
+
+def check_critique_contract():
+    text = read(
+        "critique"
+    ).lower()
+
+    required = [
+        "without gathering new evidence",
+        "do not independently search",
+        "contradiction handling",
+        "uncertainty hygiene",
+        "task completion",
+        "research retry decisions belong",
+    ]
+
+    for value in required:
+        assert value in text, value
+
+    print(
+        "CRITIQUE_CONTRACT_OK"
+    )
+
+
 def check_portability():
     forbidden = [
         "/home/agent",
@@ -205,6 +254,8 @@ def main():
     check_verification_contract()
     check_synthesis_contract()
     check_knowledge_contract()
+    check_acceptance_contract()
+    check_critique_contract()
     check_portability()
 
     print()

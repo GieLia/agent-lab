@@ -104,10 +104,48 @@ Use explicit verification states and written uncertainty instead.
 
 ## Evidence Integrity
 
-Evidence identifiers must be unique within their document.
+Document-local uniqueness is necessary but not sufficient. claim_id, source_id, and evidence_id must be unique across the complete mission scope.
 
 Every evidence.claim_id must reference an existing claim.
 
 Every evidence.source_id must reference an existing source.
 
 Orphan evidence is invalid.
+
+## Identifier Namespace And Merge Integrity
+
+claim_id, source_id, and evidence_id must be unique
+across the complete mission scope, not merely inside
+one worker document.
+
+Implementations should use either:
+
+- globally unique identifiers such as UUID or ULID; or
+- a deterministic mission/worker/entity namespace.
+
+When parallel WorkerResult objects are merged,
+identifier collisions must be detected before merge.
+
+A collision must never be silently resolved by
+discarding or overwriting one object.
+
+Any identifier rewrite must update every dependent
+reference atomically.
+
+## Verification State Versus Ledger Lifecycle
+
+Claim.verification_status describes evidentiary state.
+
+LedgerEntry.status describes durable-record lifecycle.
+
+These are separate dimensions.
+
+A ledger record being active does not imply that
+its claim is verified.
+
+A disputed claim should retain
+verification_status=disputed.
+
+When durable knowledge containing that claim requires
+review, the ledger lifecycle state should be
+under_review rather than using a second disputed state.

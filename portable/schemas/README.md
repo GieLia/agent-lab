@@ -2,7 +2,7 @@
 
 Provider-neutral structured data contracts.
 
-Planned core schemas include:
+Current core schemas:
 
 - ResearchPlan
 - Source
@@ -10,4 +10,20 @@ Planned core schemas include:
 - Evidence
 - WorkerResult
 - ResearchReport
+- AcceptanceGate
 - LedgerEntry
+- KnowledgeBundle
+
+Key relationships:
+
+Claim <- Evidence -> Source
+
+AcceptanceGate determines which research material may
+enter synthesis.
+
+KnowledgeBundle is the durable persistence boundary for
+knowledge provenance. It keeps LedgerEntry, Evidence,
+and Source records together so evidence identifiers do
+not become orphan references.
+
+Schema files use JSON Schema Draft 2020-12.

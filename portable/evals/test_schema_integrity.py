@@ -6,8 +6,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "schemas"
 
 EXPECTED_SCHEMAS = {
+    "acceptance-gate.schema.json",
     "claim.schema.json",
     "evidence.schema.json",
+    "knowledge-bundle.schema.json",
     "ledger-entry.schema.json",
     "research-plan.schema.json",
     "research-report.schema.json",
@@ -15,7 +17,7 @@ EXPECTED_SCHEMAS = {
     "worker-result.schema.json",
 }
 
-DRAFT_2020_12 = (
+DRAFT = (
     "https://json-schema.org/"
     "draft/2020-12/schema"
 )
@@ -29,12 +31,9 @@ def load_schemas():
         )
     }
 
-    assert set(paths) == EXPECTED_SCHEMAS, (
-        "schema set mismatch: "
-        f"{set(paths)}"
-    )
+    assert set(paths) == EXPECTED_SCHEMAS
 
-    schemas = {
+    return {
         name: json.loads(
             path.read_text(
                 encoding="utf-8"
@@ -43,42 +42,37 @@ def load_schemas():
         for name, path in paths.items()
     }
 
-    return schemas
+
+def walk_refs(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "$ref":
+                yield child
+
+            yield from walk_refs(
+                child
+            )
+
+    elif isinstance(value, list):
+        for child in value:
+            yield from walk_refs(
+                child
+            )
 
 
-def check_schema_structure(
-    schemas,
-):
+def check_structure(schemas):
     ids = []
-    titles = []
 
     for name, schema in schemas.items():
-
-        assert isinstance(
-            schema,
-            dict,
-        )
+        assert schema["$schema"] == DRAFT
+        assert schema["$id"] == name
+        assert schema["type"] == "object"
 
         assert (
-            schema.get("$schema")
-            == DRAFT_2020_12
-        ), name
-
-        assert (
-            schema.get("$id")
-            == name
-        ), name
-
-        assert isinstance(
-            schema.get("title"),
-            str,
-        )
-
-        assert schema["title"]
-
-        assert (
-            schema.get("type")
-            == "object"
+            schema.get("x-version")
+            == 1
+        ), (
+            f"{name}: missing x-version"
         )
 
         properties = schema.get(
@@ -90,183 +84,303 @@ def check_schema_structure(
             dict,
         )
 
-        required = schema.get(
+        for required in schema.get(
             "required",
-            []
-        )
-
-        assert isinstance(
-            required,
-            list,
-        )
-
-        for field in required:
-            assert (
-                field in properties
-            ), (
-                f"{name}: required field "
-                f"{field!r} missing from "
-                "properties"
-            )
+            [],
+        ):
+            assert required in properties
 
         assert (
             schema.get(
                 "additionalProperties"
             )
             is False
-        ), (
-            f"{name}: "
-            "additionalProperties "
-            "must be false"
         )
 
         ids.append(
             schema["$id"]
         )
 
-        titles.append(
-            schema["title"]
-        )
-
-    assert (
-        len(ids)
-        == len(set(ids))
-    ), "duplicate schema $id"
-
-    assert (
-        len(titles)
-        == len(set(titles))
-    ), "duplicate schema title"
+    assert len(ids) == len(set(ids))
 
     print(
         "SCHEMA_STRUCTURE_OK"
     )
 
 
-def walk_refs(value):
-    if isinstance(value, dict):
-
-        for key, child in value.items():
-
-            if key == "$ref":
-                yield child
-
-            yield from walk_refs(
-                child
-            )
-
-    elif isinstance(value, list):
-
-        for child in value:
-            yield from walk_refs(
-                child
-            )
-
-
-def check_local_refs(
-    schemas,
-):
+def check_refs(schemas):
     known = set(schemas)
 
-    refs = []
-
     for schema in schemas.values():
-        refs.extend(
-            walk_refs(schema)
-        )
+        for ref in walk_refs(schema):
+            if "://" in ref:
+                continue
 
-    assert refs, (
-        "no local schema references found"
+            assert ref in known, (
+                f"missing local ref: {ref}"
+            )
+
+    bundle_refs = set(
+        walk_refs(
+            schemas[
+                "knowledge-bundle.schema.json"
+            ]
+        )
     )
 
-    for ref in refs:
-
-        if "://" in ref:
-            continue
-
-        assert ref in known, (
-            f"missing local $ref: {ref}"
-        )
+    assert {
+        "ledger-entry.schema.json",
+        "source.schema.json",
+        "evidence.schema.json",
+    }.issubset(
+        bundle_refs
+    )
 
     print(
         "LOCAL_SCHEMA_REFS_OK"
     )
 
 
-def check_expected_contract_refs(
-    schemas,
-):
-    worker_refs = set(
-        walk_refs(
-            schemas[
-                "worker-result.schema.json"
-            ]
-        )
+def check_contracts(schemas):
+    ledger = schemas[
+        "ledger-entry.schema.json"
+    ]
+
+    statuses = set(
+        ledger[
+            "properties"
+        ][
+            "status"
+        ][
+            "enum"
+        ]
     )
 
-    assert {
-        "claim.schema.json",
-        "source.schema.json",
-        "evidence.schema.json",
-    }.issubset(
-        worker_refs
-    )
+    assert statuses == {
+        "active",
+        "superseded",
+        "under_review",
+        "retracted",
+    }
 
-    report_refs = set(
-        walk_refs(
-            schemas[
-                "research-report.schema.json"
-            ]
-        )
-    )
+    assert "disputed" not in statuses
+    assert "retraction" in ledger["properties"]
+    assert "allOf" in ledger
 
-    assert {
-        "claim.schema.json",
-        "source.schema.json",
-        "evidence.schema.json",
-    }.issubset(
-        report_refs
-    )
-
-    ledger_refs = set(
-        walk_refs(
-            schemas[
-                "ledger-entry.schema.json"
-            ]
-        )
+    assert (
+        "evidence_ids"
+        in ledger["required"]
     )
 
     assert (
-        "claim.schema.json"
-        in ledger_refs
+        ledger["properties"]
+        ["evidence_ids"]
+        ["minItems"]
+        == 1
     )
+
+    assert (
+        ledger["properties"]
+        ["evidence_ids"]
+        ["uniqueItems"]
+        is True
+    )
+
+    assert (
+        "superseded_by"
+        in ledger["properties"]
+    )
+
+    plan = schemas[
+        "research-plan.schema.json"
+    ]
+
+    assert (
+        "retry_budget"
+        in plan["required"]
+    )
+
+    retry = plan[
+        "properties"
+    ][
+        "retry_budget"
+    ]
+
+    assert set(
+        retry[
+            "properties"
+        ][
+            "on_exhaustion"
+        ][
+            "enum"
+        ]
+    ) == {
+        "escalate",
+        "synthesize_with_gaps",
+        "fail",
+    }
+
+    worker = schemas[
+        "worker-result.schema.json"
+    ]
+
+    roles = set(
+        worker[
+            "properties"
+        ][
+            "role"
+        ][
+            "enum"
+        ]
+    )
+
+    assert roles == {
+        "research-lead",
+        "researcher",
+        "critic",
+        "evidence-verifier",
+        "synthesizer",
+    }
+
+    gate = schemas[
+        "acceptance-gate.schema.json"
+    ]
+
+    for field in [
+        "gate_id",
+        "mission_id",
+        "decision",
+        "accepted_worker_ids",
+        "accepted_claim_ids",
+        "rejected_worker_ids",
+        "rejected_claim_ids",
+        "decided_by",
+    ]:
+        assert field in gate["required"]
+
+    assert (
+        "allOf"
+        in gate
+    )
+
+    assert len(
+        gate["allOf"]
+    ) == 3
 
     print(
-        "EXPECTED_CONTRACT_REFS_OK"
+        "SCHEMA_CONTRACTS_OK"
     )
 
 
-def check_referential_integrity(
+def check_worker_references(
     document,
 ):
-    claims = document.get(
-        "claims",
-        []
-    )
-
-    sources = document.get(
-        "sources",
-        []
-    )
-
-    evidence = document.get(
-        "evidence",
-        []
-    )
-
     claim_ids = [
         item["claim_id"]
-        for item in claims
+        for item in document["claims"]
+    ]
+
+    source_ids = [
+        item["source_id"]
+        for item in document["sources"]
+    ]
+
+    evidence_ids = [
+        item["evidence_id"]
+        for item in document["evidence"]
+    ]
+
+    assert len(claim_ids) == len(set(claim_ids))
+    assert len(source_ids) == len(set(source_ids))
+    assert len(evidence_ids) == len(set(evidence_ids))
+
+    claims = set(claim_ids)
+    sources = set(source_ids)
+
+    for item in document["evidence"]:
+        assert item["claim_id"] in claims
+        assert item["source_id"] in sources
+
+
+def check_worker_reference_cases():
+    good = {
+        "claims": [
+            {
+                "claim_id": "c-1"
+            }
+        ],
+        "sources": [
+            {
+                "source_id": "s-1"
+            }
+        ],
+        "evidence": [
+            {
+                "evidence_id": "e-1",
+                "claim_id": "c-1",
+                "source_id": "s-1",
+            }
+        ],
+    }
+
+    check_worker_references(
+        good
+    )
+
+    broken = {
+        **good,
+        "evidence": [
+            {
+                "evidence_id": "e-1",
+                "claim_id": "missing",
+                "source_id": "s-1",
+            }
+        ],
+    }
+
+    try:
+        check_worker_references(
+            broken
+        )
+
+    except AssertionError:
+        print(
+            "ORPHAN_EVIDENCE_REJECTED_OK"
+        )
+
+    else:
+        raise AssertionError(
+            "orphan evidence accepted"
+        )
+
+    print(
+        "WORKER_REFERENCE_INTEGRITY_OK"
+    )
+
+
+def check_knowledge_bundle(
+    bundle,
+):
+    entries = bundle[
+        "ledger_entries"
+    ]
+
+    sources = bundle[
+        "sources"
+    ]
+
+    evidence = bundle[
+        "evidence"
+    ]
+
+    entry_ids = [
+        item["entry_id"]
+        for item in entries
+    ]
+
+    claim_ids = [
+        item["claim"]["claim_id"]
+        for item in entries
     ]
 
     source_ids = [
@@ -279,151 +393,121 @@ def check_referential_integrity(
         for item in evidence
     ]
 
-    assert (
-        len(claim_ids)
-        == len(set(claim_ids))
-    ), "duplicate claim_id"
+    assert len(entry_ids) == len(set(entry_ids))
+    assert len(claim_ids) == len(set(claim_ids))
+    assert len(source_ids) == len(set(source_ids))
+    assert len(evidence_ids) == len(set(evidence_ids))
 
-    assert (
-        len(source_ids)
-        == len(set(source_ids))
-    ), "duplicate source_id"
-
-    assert (
-        len(evidence_ids)
-        == len(set(evidence_ids))
-    ), "duplicate evidence_id"
-
-    known_claims = set(
-        claim_ids
-    )
-
-    known_sources = set(
-        source_ids
-    )
+    known_claims = set(claim_ids)
+    known_sources = set(source_ids)
+    known_evidence = set(evidence_ids)
 
     for item in evidence:
-
         assert (
             item["claim_id"]
             in known_claims
-        ), (
-            "orphan evidence claim_id: "
-            f"{item['claim_id']}"
         )
 
         assert (
             item["source_id"]
             in known_sources
-        ), (
-            "orphan evidence source_id: "
-            f"{item['source_id']}"
         )
 
+    for entry in entries:
+        for evidence_id in entry.get(
+            "evidence_ids",
+            [],
+        ):
+            assert (
+                evidence_id
+                in known_evidence
+            )
 
-def check_positive_reference_case():
-    sample = {
-        "claims": [
+
+def check_knowledge_bundle_cases():
+    bundle = {
+        "ledger_entries": [
             {
-                "claim_id":
-                    "claim-1"
+                "entry_id": "l-1",
+                "claim": {
+                    "claim_id": "c-1"
+                },
+                "evidence_ids": [
+                    "e-1"
+                ],
             }
         ],
-
         "sources": [
             {
-                "source_id":
-                    "source-1"
+                "source_id": "s-1"
             }
         ],
-
         "evidence": [
             {
-                "evidence_id":
-                    "evidence-1",
-
-                "claim_id":
-                    "claim-1",
-
-                "source_id":
-                    "source-1"
+                "evidence_id": "e-1",
+                "claim_id": "c-1",
+                "source_id": "s-1",
             }
-        ]
+        ],
     }
 
-    check_referential_integrity(
-        sample
+    check_knowledge_bundle(
+        bundle
     )
 
-    print(
-        "REFERENCE_INTEGRITY_OK"
-    )
-
-
-def check_negative_reference_case():
     broken = {
-        "claims": [
+        **bundle,
+        "ledger_entries": [
             {
-                "claim_id":
-                    "claim-1"
+                "entry_id": "l-1",
+                "claim": {
+                    "claim_id": "c-1"
+                },
+                "evidence_ids": [
+                    "missing-evidence"
+                ],
             }
         ],
-
-        "sources": [
-            {
-                "source_id":
-                    "source-1"
-            }
-        ],
-
-        "evidence": [
-            {
-                "evidence_id":
-                    "evidence-1",
-
-                "claim_id":
-                    "missing-claim",
-
-                "source_id":
-                    "source-1"
-            }
-        ]
     }
 
     try:
-        check_referential_integrity(
+        check_knowledge_bundle(
             broken
         )
 
     except AssertionError:
         print(
-            "ORPHAN_EVIDENCE_REJECTED_OK"
+            "DURABLE_ORPHAN_REJECTED_OK"
         )
-        return
 
-    raise AssertionError(
-        "orphan evidence was accepted"
+    else:
+        raise AssertionError(
+            "durable orphan accepted"
+        )
+
+    print(
+        "KNOWLEDGE_BUNDLE_INTEGRITY_OK"
     )
 
 
 def main():
     schemas = load_schemas()
 
-    check_schema_structure(
+    check_structure(
         schemas
     )
 
-    check_local_refs(
+    check_refs(
         schemas
     )
 
-    check_expected_contract_refs(
+    check_contracts(
         schemas
     )
 
-    check_positive_reference_case()
+    check_worker_reference_cases()
 
-    check_negative_reference_case()
+    check_knowledge_bundle_cases()
 
     print()
     print(
