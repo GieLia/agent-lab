@@ -1,0 +1,26 @@
+{
+  "profile_id": "research-readonly",
+  "version": 1,
+  "status": "experimental",
+  "description": "Read-only research profile for external evidence gathering and authorized local context reading.",
+  "default_deny": true,
+  "allowed_capabilities": [
+    "web.search",
+    "web.fetch",
+    "document.read",
+    "workspace.read"
+  ],
+  "max_tools_exposed": 8,
+  "runtime_constraints": {
+    "network_access": "read_only",
+    "workspace_write": false,
+    "process_execute": false,
+    "privileged": false
+  },
+  "required_policies": [
+    "research-policy.md",
+    "evidence-policy.md",
+    "security-policy.md",
+    "tool-security-policy.md"
+  ]
+}

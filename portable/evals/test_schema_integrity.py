@@ -7,6 +7,7 @@ SCHEMA_DIR = ROOT / "schemas"
 
 EXPECTED_SCHEMAS = {
     "acceptance-gate.schema.json",
+    "capability-registry.schema.json",
     "claim.schema.json",
     "evidence.schema.json",
     "knowledge-bundle.schema.json",
@@ -14,6 +15,8 @@ EXPECTED_SCHEMAS = {
     "research-plan.schema.json",
     "research-report.schema.json",
     "source.schema.json",
+    "tool-binding-registry.schema.json",
+    "tool-profile.schema.json",
     "worker-result.schema.json",
 }
 
@@ -115,6 +118,15 @@ def check_refs(schemas):
         for ref in walk_refs(schema):
             if "://" in ref:
                 continue
+
+            if ref.startswith("#"):
+                continue
+
+            if "#" in ref:
+                ref = ref.split(
+                    "#",
+                    1,
+                )[0]
 
             assert ref in known, (
                 f"missing local ref: {ref}"

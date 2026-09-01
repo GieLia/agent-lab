@@ -8,6 +8,7 @@ EXPECTED = {
     "research-policy.md",
     "evidence-policy.md",
     "security-policy.md",
+    "tool-security-policy.md",
 }
 
 
@@ -123,6 +124,30 @@ def check_security_policy():
     )
 
 
+def check_tool_security_policy():
+    text = read(
+        "tool-security-policy.md"
+    ).lower()
+
+    required = [
+        "default deny",
+        "a model must not grant itself additional capabilities",
+        "concrete tools are implementation details",
+        "mcp is an implementation kind, not a capability class",
+        "dynamic tool discovery must not automatically authorize",
+        "privileged operations require explicit human approval",
+        "measurement does not replace enforcement",
+        "the stricter security boundary wins",
+    ]
+
+    for value in required:
+        assert value in text, value
+
+    print(
+        "TOOL_SECURITY_POLICY_CONTRACT_OK"
+    )
+
+
 def check_role_separation():
     security = read(
         "security-policy.md"
@@ -158,6 +183,7 @@ def main():
     check_research_policy()
     check_evidence_policy()
     check_security_policy()
+    check_tool_security_policy()
     check_role_separation()
 
     print()

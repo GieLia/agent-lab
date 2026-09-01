@@ -1,0 +1,75 @@
+{
+  "registry_version": 1,
+  "capabilities": [
+    {
+      "capability_id": "web.search",
+      "version": 1,
+      "description": "Search external web information without mutating external state.",
+      "resource": "network",
+      "access_class": "read",
+      "default_approval": "none",
+      "network_access": true,
+      "potential_external_side_effects": false
+    },
+    {
+      "capability_id": "web.fetch",
+      "version": 1,
+      "description": "Retrieve a specific external web resource without mutating external state.",
+      "resource": "network",
+      "access_class": "read",
+      "default_approval": "none",
+      "network_access": true,
+      "potential_external_side_effects": false
+    },
+    {
+      "capability_id": "document.read",
+      "version": 1,
+      "description": "Read supplied or explicitly authorized document content.",
+      "resource": "document",
+      "access_class": "read",
+      "default_approval": "none",
+      "network_access": false,
+      "potential_external_side_effects": false
+    },
+    {
+      "capability_id": "workspace.read",
+      "version": 1,
+      "description": "Read files from an explicitly authorized workspace.",
+      "resource": "workspace",
+      "access_class": "read",
+      "default_approval": "none",
+      "network_access": false,
+      "potential_external_side_effects": false
+    },
+    {
+      "capability_id": "workspace.write",
+      "version": 1,
+      "description": "Create or modify files inside an explicitly authorized workspace.",
+      "resource": "workspace",
+      "access_class": "write",
+      "default_approval": "runtime",
+      "network_access": false,
+      "potential_external_side_effects": false
+    },
+    {
+      "capability_id": "process.execute",
+      "version": 1,
+      "description": "Execute a process inside a runtime-authorized execution boundary.",
+      "resource": "process",
+      "access_class": "execute",
+      "default_approval": "runtime",
+      "network_access": false,
+      "potential_external_side_effects": true
+    },
+    {
+      "capability_id": "system.privileged",
+      "version": 1,
+      "description": "Perform an operation requiring elevated operating-system or infrastructure privilege.",
+      "resource": "system",
+      "access_class": "privileged",
+      "default_approval": "human",
+      "network_access": false,
+      "potential_external_side_effects": true
+    }
+  ]
+}

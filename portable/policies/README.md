@@ -9,6 +9,7 @@ Current policies:
 - research-policy.md
 - evidence-policy.md
 - security-policy.md
+- tool-security-policy.md
 
 Priority principle:
 

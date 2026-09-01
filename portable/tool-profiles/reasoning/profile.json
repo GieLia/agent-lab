@@ -1,0 +1,19 @@
+{
+  "profile_id": "reasoning",
+  "version": 1,
+  "status": "active",
+  "description": "Pure reasoning profile with no external tools or runtime capabilities.",
+  "default_deny": true,
+  "allowed_capabilities": [],
+  "max_tools_exposed": 0,
+  "runtime_constraints": {
+    "network_access": "none",
+    "workspace_write": false,
+    "process_execute": false,
+    "privileged": false
+  },
+  "required_policies": [
+    "security-policy.md",
+    "tool-security-policy.md"
+  ]
+}

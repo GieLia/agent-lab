@@ -1,0 +1,275 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-binding-registry.schema.json",
+  "title": "ToolBindingRegistry",
+  "type": "object",
+  "required": [
+    "registry_version",
+    "bindings"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bindings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "binding": {
+      "type": "object",
+      "required": [
+        "binding_id",
+        "version",
+        "status",
+        "capability_id",
+        "tool_kind",
+        "tool_name",
+        "approval",
+        "implementation"
+      ],
+      "properties": {
+        "binding_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z][a-z0-9_-]*)+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "experimental",
+            "disabled"
+          ]
+        },
+        "capability_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z][a-z0-9_-]*)+$"
+        },
+        "tool_kind": {
+          "type": "string",
+          "enum": [
+            "native",
+            "cli",
+            "python",
+            "http",
+            "mcp"
+          ]
+        },
+        "tool_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approval": {
+          "type": "string",
+          "enum": [
+            "none",
+            "runtime",
+            "human"
+          ]
+        },
+        "implementation": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tool_kind": {
+                "const": "native"
+              }
+            },
+            "required": [
+              "tool_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "implementation": {
+                "$ref": "#/$defs/nativeImplementation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tool_kind": {
+                "const": "cli"
+              }
+            },
+            "required": [
+              "tool_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "implementation": {
+                "$ref": "#/$defs/cliImplementation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tool_kind": {
+                "const": "python"
+              }
+            },
+            "required": [
+              "tool_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "implementation": {
+                "$ref": "#/$defs/pythonImplementation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tool_kind": {
+                "const": "http"
+              }
+            },
+            "required": [
+              "tool_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "implementation": {
+                "$ref": "#/$defs/httpImplementation"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tool_kind": {
+                "const": "mcp"
+              }
+            },
+            "required": [
+              "tool_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "implementation": {
+                "$ref": "#/$defs/mcpImplementation"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "nativeImplementation": {
+      "type": "object",
+      "required": [
+        "provider",
+        "native_tool"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "native_tool": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "cliImplementation": {
+      "type": "object",
+      "required": [
+        "executable"
+      ],
+      "properties": {
+        "executable": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "pythonImplementation": {
+      "type": "object",
+      "required": [
+        "callable"
+      ],
+      "properties": {
+        "callable": {
+          "type": "string",
+          "minLength": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "httpImplementation": {
+      "type": "object",
+      "required": [
+        "endpoint_id"
+      ],
+      "properties": {
+        "endpoint_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "mcpImplementation": {
+      "type": "object",
+      "required": [
+        "server_id",
+        "tool",
+        "transport"
+      ],
+      "properties": {
+        "server_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "server_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tool": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "stdio",
+            "streamable_http"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "x-version": 1
+}

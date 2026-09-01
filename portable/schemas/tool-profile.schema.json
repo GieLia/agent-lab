@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-profile.schema.json",
+  "title": "ToolProfile",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "version",
+    "status",
+    "description",
+    "default_deny",
+    "allowed_capabilities",
+    "max_tools_exposed",
+    "runtime_constraints",
+    "required_policies"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "experimental",
+        "disabled"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "default_deny": {
+      "const": true
+    },
+    "allowed_capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 3
+      }
+    },
+    "max_tools_exposed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "runtime_constraints": {
+      "type": "object",
+      "required": [
+        "network_access",
+        "workspace_write",
+        "process_execute",
+        "privileged"
+      ],
+      "properties": {
+        "network_access": {
+          "type": "string",
+          "enum": [
+            "none",
+            "read_only",
+            "full"
+          ]
+        },
+        "workspace_write": {
+          "type": "boolean"
+        },
+        "process_execute": {
+          "type": "boolean"
+        },
+        "privileged": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "required_policies": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-version": 1
+}

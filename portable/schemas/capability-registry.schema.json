@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capability-registry.schema.json",
+  "title": "CapabilityRegistry",
+  "type": "object",
+  "required": [
+    "registry_version",
+    "capabilities"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "required": [
+        "capability_id",
+        "version",
+        "description",
+        "resource",
+        "access_class",
+        "default_approval",
+        "network_access",
+        "potential_external_side_effects"
+      ],
+      "properties": {
+        "capability_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]*(\\.[a-z][a-z0-9_-]*)+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resource": {
+          "type": "string",
+          "enum": [
+            "network",
+            "document",
+            "workspace",
+            "process",
+            "system"
+          ]
+        },
+        "access_class": {
+          "type": "string",
+          "enum": [
+            "read",
+            "write",
+            "execute",
+            "privileged"
+          ]
+        },
+        "default_approval": {
+          "type": "string",
+          "enum": [
+            "none",
+            "runtime",
+            "human"
+          ]
+        },
+        "network_access": {
+          "type": "boolean"
+        },
+        "potential_external_side_effects": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "x-version": 1
+}
