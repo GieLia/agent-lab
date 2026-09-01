@@ -5,6 +5,9 @@ import uuid
 
 from pathlib import Path
 
+from .result import WorkerExecutionResult
+from .telemetry import parse_claude_payload
+
 
 CLAUDE_BIN = "/home/agent/.local/bin/claude"
 
@@ -100,7 +103,8 @@ async def _run_primary(
     tool_profile: str,
     system_prompt: str | None,
     json_schema: dict | None,
-) -> str:
+    detailed: bool = False,
+) -> str | WorkerExecutionResult:
 
     command = [
         CLAUDE_BIN,
@@ -200,6 +204,13 @@ async def _run_primary(
         )
 
     except json.JSONDecodeError:
+        if detailed:
+            return parse_claude_payload(
+                payload={},
+                text=stdout_text,
+                account="primary",
+            )
+
         return stdout_text
 
     if isinstance(data, dict):
@@ -230,10 +241,19 @@ async def _run_primary(
                     )
                 )
 
-            return json.dumps(
+            result_text = json.dumps(
                 structured,
                 ensure_ascii=False,
             )
+
+            if detailed:
+                return parse_claude_payload(
+                    payload=data,
+                    text=result_text,
+                    account="primary",
+                )
+
+            return result_text
 
         result = data.get(
             "result"
@@ -244,7 +264,25 @@ async def _run_primary(
                 "Claude returned an empty result"
             )
 
-        return str(result)
+        result_text = str(
+            result
+        )
+
+        if detailed:
+            return parse_claude_payload(
+                payload=data,
+                text=result_text,
+                account="primary",
+            )
+
+        return result_text
+
+    if detailed:
+        return parse_claude_payload(
+            payload={},
+            text=stdout_text,
+            account="primary",
+        )
 
     return stdout_text
 
@@ -257,7 +295,8 @@ async def _run_secondary(
     tool_profile: str,
     system_prompt: str | None,
     json_schema: dict | None,
-) -> str:
+    detailed: bool = False,
+) -> str | WorkerExecutionResult:
 
     if tool_profile != "reasoning":
         raise ValueError(
@@ -430,7 +469,29 @@ async def _run_secondary(
                 f"(request_id={request_id})"
             )
 
-        return str(result)
+        result_text = str(
+            result
+        )
+
+        if detailed:
+            telemetry = response.get(
+                "telemetry"
+            )
+
+            if not isinstance(
+                telemetry,
+                dict,
+            ):
+                telemetry = {}
+
+            return parse_claude_payload(
+                payload=telemetry,
+                text=result_text,
+                account="secondary",
+                request_id=request_id,
+            )
+
+        return result_text
 
     finally:
         writer.close()
@@ -487,3 +548,64 @@ async def run_claude(
         json_schema=
             json_schema,
     )
+
+async def run_claude_detailed(
+    prompt: str,
+    cwd: Path,
+    timeout: int = 1200,
+    max_turns: int = 8,
+    tool_profile: str | None = None,
+    system_prompt: str | None = None,
+    json_schema: dict | None = None,
+    account: str | None = None,
+) -> WorkerExecutionResult:
+
+    resolved_account = _resolve_account(
+        account
+    )
+
+    resolved_profile = (
+        _resolve_tool_profile(
+            tool_profile
+        )
+    )
+
+    if resolved_account == "primary":
+        result = await _run_primary(
+            prompt=prompt,
+            cwd=cwd,
+            timeout=timeout,
+            max_turns=max_turns,
+            tool_profile=
+                resolved_profile,
+            system_prompt=
+                system_prompt,
+            json_schema=
+                json_schema,
+            detailed=True,
+        )
+
+    else:
+        result = await _run_secondary(
+            prompt=prompt,
+            timeout=timeout,
+            max_turns=max_turns,
+            tool_profile=
+                resolved_profile,
+            system_prompt=
+                system_prompt,
+            json_schema=
+                json_schema,
+            detailed=True,
+        )
+
+    if not isinstance(
+        result,
+        WorkerExecutionResult,
+    ):
+        raise RuntimeError(
+            "Detailed Claude execution "
+            "returned unexpected result type"
+        )
+
+    return result

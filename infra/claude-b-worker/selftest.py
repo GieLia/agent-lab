@@ -50,6 +50,7 @@ async def large_request_test(
         request,
         request_id,
         disconnect_task=None,
+        include_telemetry=False,
     ):
         assert (
             len(
@@ -60,7 +61,19 @@ async def large_request_test(
             > 100_000
         )
 
-        return "LARGE_OK"
+        assert (
+            include_telemetry
+            is True
+        )
+
+        return {
+            "result":
+                "LARGE_OK",
+            "telemetry": {
+                "selftest":
+                    True,
+            },
+        }
 
     module.execute = fake_execute
 
@@ -149,8 +162,25 @@ async def large_request_test(
             )
 
             assert (
+                response[
+                    "protocol_version"
+                ]
+                == 3
+            )
+
+            assert (
                 response["result"]
                 == "LARGE_OK"
+            )
+
+            assert (
+                response[
+                    "telemetry"
+                ]
+                == {
+                    "selftest":
+                        True,
+                }
             )
 
     finally:

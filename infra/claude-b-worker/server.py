@@ -243,6 +243,7 @@ async def execute(
     request,
     request_id,
     disconnect_task=None,
+    include_telemetry=False,
 ):
     (
         prompt,
@@ -437,6 +438,16 @@ async def execute(
         )
 
     except json.JSONDecodeError:
+        if include_telemetry:
+            return {
+                "result":
+                    stdout_text,
+                "telemetry": {
+                    "worker_duration_ms":
+                        duration_ms,
+                },
+            }
+
         return stdout_text
 
     if isinstance(data, dict):
@@ -472,10 +483,34 @@ async def execute(
                     )
                 )
 
-            return json.dumps(
+            result_text = json.dumps(
                 structured,
                 ensure_ascii=False,
             )
+
+            if include_telemetry:
+                telemetry = {
+                    key: value
+                    for key, value
+                    in data.items()
+                    if key not in {
+                        "result",
+                        "structured_output",
+                    }
+                }
+
+                telemetry[
+                    "worker_duration_ms"
+                ] = duration_ms
+
+                return {
+                    "result":
+                        result_text,
+                    "telemetry":
+                        telemetry,
+                }
+
+            return result_text
 
         result = data.get(
             "result"
@@ -487,7 +522,43 @@ async def execute(
                 "empty result"
             )
 
-        return str(result)
+        result_text = str(
+            result
+        )
+
+        if include_telemetry:
+            telemetry = {
+                key: value
+                for key, value
+                in data.items()
+                if key not in {
+                    "result",
+                    "structured_output",
+                }
+            }
+
+            telemetry[
+                "worker_duration_ms"
+            ] = duration_ms
+
+            return {
+                "result":
+                    result_text,
+                "telemetry":
+                    telemetry,
+            }
+
+        return result_text
+
+    if include_telemetry:
+        return {
+            "result":
+                stdout_text,
+            "telemetry": {
+                "worker_duration_ms":
+                    duration_ms,
+            },
+        }
 
     return stdout_text
 
@@ -562,12 +633,13 @@ async def handle_client(
             )
 
             try:
-                result = await execute(
+                execution = await execute(
                     request,
                     request_id,
                     disconnect_task=(
                         disconnect_task
                     ),
+                    include_telemetry=True,
                 )
 
             finally:
@@ -583,9 +655,16 @@ async def handle_client(
 
             response = {
                 "ok": True,
-                "protocol_version": 2,
-                "request_id": request_id,
-                "result": result,
+                "protocol_version": 3,
+                "request_id":
+                    request_id,
+                "result":
+                    execution["result"],
+                "telemetry":
+                    execution.get(
+                        "telemetry",
+                        {},
+                    ),
             }
 
         except ClientDisconnected:
@@ -613,7 +692,7 @@ async def handle_client(
 
             response = {
                 "ok": False,
-                "protocol_version": 2,
+                "protocol_version": 3,
                 "request_id": request_id,
                 "error": (
                     f"{type(exc).__name__}: "
@@ -635,7 +714,7 @@ async def handle_client(
         ):
             response = {
                 "ok": False,
-                "protocol_version": 2,
+                "protocol_version": 3,
                 "request_id": request_id,
                 "error": (
                     "response exceeds "
