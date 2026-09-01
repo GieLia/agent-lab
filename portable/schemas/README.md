@@ -14,6 +14,7 @@ Current core schemas:
 - LedgerEntry
 - KnowledgeBundle
 - CapabilityRegistry
+- ContextManifest
 - ToolProfile
 - ToolBindingRegistry
 
@@ -46,3 +47,10 @@ Python, HTTP, or MCP implementations.
 
 Concrete binding registries are deployment-specific and
 remain outside portable assets.
+
+ContextManifest selects the minimal Role Profile, Skills,
+ToolProfile, schemas, and context budget required for a
+worker configuration.
+
+Required policies are resolved from canonical selected
+assets rather than duplicated in the manifest.

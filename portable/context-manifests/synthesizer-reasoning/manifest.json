@@ -1,0 +1,17 @@
+{
+  "manifest_id": "synthesizer-reasoning",
+  "version": 1,
+  "status": "active",
+  "role_profile": "synthesizer",
+  "skills": [
+    "synthesis"
+  ],
+  "tool_profile": "reasoning",
+  "schemas": [
+    "research-report.schema.json"
+  ],
+  "context_budget": {
+    "max_files": 8,
+    "max_bytes": 49152
+  }
+}

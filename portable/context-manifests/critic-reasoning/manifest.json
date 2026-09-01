@@ -1,0 +1,15 @@
+{
+  "manifest_id": "critic-reasoning",
+  "version": 1,
+  "status": "active",
+  "role_profile": "critic",
+  "skills": [
+    "critique"
+  ],
+  "tool_profile": "reasoning",
+  "schemas": [],
+  "context_budget": {
+    "max_files": 8,
+    "max_bytes": 32768
+  }
+}

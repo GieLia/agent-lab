@@ -9,6 +9,7 @@ EXPECTED_SCHEMAS = {
     "acceptance-gate.schema.json",
     "capability-registry.schema.json",
     "claim.schema.json",
+    "context-manifest.schema.json",
     "evidence.schema.json",
     "knowledge-bundle.schema.json",
     "ledger-entry.schema.json",
