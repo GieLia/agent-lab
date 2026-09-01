@@ -790,7 +790,7 @@ async def main():
     print(
         "claude-b worker listening: "
         f"{SOCKET_PATH} "
-        "protocol=2 "
+        "protocol=3 "
         "max_request_bytes="
         f"{MAX_REQUEST_BYTES} "
         "max_response_bytes="
