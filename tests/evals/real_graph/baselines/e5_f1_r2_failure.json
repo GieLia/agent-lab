@@ -1,0 +1,69 @@
+{
+  "phase": "E5-F1-R2",
+  "run_id": "a44661a6-87b5-4017-bd45-5833450fa729",
+  "baseline_type": "real_graph_partial_success_failure",
+  "verdict": "research_and_verification_passed_critic_transport_failed",
+  "research_result_status": "success",
+  "research_metrics": {
+    "steps": 3,
+    "model_calls": 3,
+    "search_calls": 1,
+    "fetch_calls": 1,
+    "sources_retrieved": 1
+  },
+  "research": {
+    "claims": 4,
+    "sources": 1,
+    "evidence": 4,
+    "source_url": "https://docs.python.org/3/library/venv.html"
+  },
+  "verification": {
+    "semantic_records": 4,
+    "verified_claims": 4,
+    "partially_verified_claims": 0,
+    "unverified_claims": 0,
+    "contradicted_claims": 0,
+    "disputed_claims": 0
+  },
+  "measurement": {
+    "research_worker_invocations": 3,
+    "semantic_worker_invocations": 4,
+    "critic_worker_invocations": 0,
+    "synthesis_worker_invocations": 0,
+    "tool_invocations": 2,
+    "web_search_success": 1,
+    "web_fetch_success": 1
+  },
+  "terminal_error": {
+    "type": "RuntimeError",
+    "stage": "critic",
+    "account": "secondary",
+    "terminal_reason": "max_turns",
+    "configured_max_turns": 1,
+    "observed_num_turns": 2
+  },
+  "findings": [
+    {
+      "id": "E5F1-R2-001",
+      "severity": "medium",
+      "finding": "Real Researcher external-web path succeeded using Brave search and guarded fetch."
+    },
+    {
+      "id": "E5F1-R2-002",
+      "severity": "medium",
+      "finding": "All four factual claims received FULL semantic verification and runtime verified status."
+    },
+    {
+      "id": "E5F1-R2-003",
+      "severity": "high",
+      "finding": "Secondary Critic structured-output invocation terminated with error_max_turns because max_turns was configured as 1."
+    },
+    {
+      "id": "E5F1-R2-004",
+      "severity": "medium",
+      "finding": "Critic transport failure occurred before WorkerExecutionResult creation, so no Critic worker invocation telemetry was persisted."
+    }
+  ],
+  "next_action": "Audit and remediate structured reasoning turn budget and transport-failure telemetry before E5-F1-R3.",
+  "preserve_original_run": true
+}
