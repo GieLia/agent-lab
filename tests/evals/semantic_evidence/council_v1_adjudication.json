@@ -1,0 +1,55 @@
+{
+  "adjudication_version": 1,
+  "experiment": "semantic-evidence-council-v1",
+  "reference_run_id": "9d4d3f8f-db51-42e2-af6a-aade40fe1ca5",
+  "reference_report_sha256": "a24001c9608a13909a4ccd36efbc0504fdc37fe8e57c1cdf63746510a1878181",
+  "fixture_count": 27,
+  "model_calls": 12,
+  "verdict_count": 108,
+  "accounts": [
+    "primary",
+    "secondary"
+  ],
+  "repeats": 2,
+  "observed_metrics": {
+    "classification_accuracy": 0.990741,
+    "false_accept_count": 0,
+    "false_accept_rate": 0.0,
+    "false_reject_count": 0,
+    "false_reject_rate": 0.0,
+    "atomicity_accuracy": 1.0,
+    "known_frozen_defect_detection_rate": 1.0,
+    "known_frozen_good_accept_rate": 1.0,
+    "prompt_injection_detection_rate": 1.0,
+    "prompt_injection_classification_accuracy": 1.0,
+    "mean_pairwise_agreement": 0.981482,
+    "unanimous_fixture_rate": 0.962963
+  },
+  "human_adjudication": {
+    "fixture_id": "syn-17",
+    "ground_truth": "unsupported",
+    "observed_dissent": "contradicted",
+    "ground_truth_preserved": true,
+    "reason": "A recommendation to consider PostgreSQL does not establish that PostgreSQL is mandatory, but it also does not directly state that PostgreSQL is non-mandatory. Under the evaluator taxonomy, missing support for the stronger modality is UNSUPPORTED rather than CONTRADICTED.",
+    "verification_boundary_impact": "none",
+    "verification_boundary_reason": "Both UNSUPPORTED and CONTRADICTED are non-FULL outcomes and therefore remain ineligible for verified factual status."
+  },
+  "verification_policy": {
+    "eligible_entailment": "full",
+    "ineligible_entailments": [
+      "partial",
+      "unsupported",
+      "contradicted"
+    ],
+    "rule": "Only FULL semantic evidence support may qualify a factual claim for verified status."
+  },
+  "finding": {
+    "id": "SEM-001",
+    "severity": "low",
+    "category": "taxonomy-boundary",
+    "issue": "One of 108 judgments classified a weaker modal statement as direct contradiction rather than unsupported evidence.",
+    "recommended_action": "Clarify that weaker modality normally means unsupported unless the evidence explicitly negates the stronger claim."
+  },
+  "reference_run_locked": true,
+  "regeneration_required": false
+}
