@@ -1,0 +1,5 @@
+# Direct Python dependencies for the E4.5 research runtime.
+# This is additive to the existing Agent Lab environment.
+
+httpx==0.28.1
+jsonschema==4.26.0
