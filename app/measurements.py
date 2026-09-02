@@ -324,6 +324,131 @@ class MeasurementWriter:
 
             return None
 
+    def record_tool_invocation(
+        self,
+        *,
+        run_id: uuid.UUID,
+        capability: str,
+        tool_name: str,
+        tool_kind: str,
+        status: str,
+        tool_profile: str | None = None,
+        worker_invocation_id: str | None = None,
+        duration_ms: int | None = None,
+        error_code: str | None = None,
+        human_approval_required: bool = False,
+        human_approval_granted: bool | None = None,
+        metadata: dict[str, Any] | None = None,
+        tool_invocation_id: str | None = None,
+    ) -> str | None:
+
+        if tool_invocation_id is None:
+            tool_invocation_id = str(
+                uuid.uuid4()
+            )
+
+        if (
+            duration_ms is not None
+            and duration_ms < 0
+        ):
+            raise ValueError(
+                "duration_ms must be nonnegative"
+            )
+
+        if (
+            human_approval_granted
+            is not None
+            and not human_approval_required
+        ):
+            raise ValueError(
+                "human_approval_granted requires "
+                "human_approval_required=True"
+            )
+
+        finished_at = datetime.now(
+            timezone.utc
+        )
+
+        if duration_ms is not None:
+            started_at = (
+                finished_at
+                - timedelta(
+                    milliseconds=
+                        duration_ms
+                )
+            )
+
+        else:
+            started_at = finished_at
+
+        try:
+            with self._connect() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        INSERT INTO
+                            measurement.tool_invocation (
+                                tool_invocation_id,
+                                run_id,
+                                worker_invocation_id,
+                                capability,
+                                tool_name,
+                                tool_kind,
+                                tool_profile,
+                                mcp_server,
+                                mcp_server_version,
+                                started_at,
+                                finished_at,
+                                duration_ms,
+                                status,
+                                error_code,
+                                human_approval_required,
+                                human_approval_granted,
+                                metadata
+                            )
+                        VALUES (
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s, %s,
+                            %s, %s
+                        )
+                        """,
+                        (
+                            tool_invocation_id,
+                            run_id,
+                            worker_invocation_id,
+                            capability,
+                            tool_name,
+                            tool_kind,
+                            tool_profile,
+                            None,
+                            None,
+                            started_at,
+                            finished_at,
+                            duration_ms,
+                            status,
+                            error_code,
+                            human_approval_required,
+                            human_approval_granted,
+                            (
+                                Jsonb(metadata)
+                                if metadata
+                                is not None
+                                else None
+                            ),
+                        ),
+                    )
+
+            return tool_invocation_id
+
+        except Exception as exc:
+            self._failure(
+                "record_tool_invocation",
+                exc,
+            )
+
+            return None
+
     def finish_run(
         self,
         *,
