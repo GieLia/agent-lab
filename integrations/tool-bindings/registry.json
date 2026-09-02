@@ -1,4 +1,29 @@
 {
   "registry_version": 1,
-  "bindings": []
+  "bindings": [
+    {
+      "binding_id": "web.search.brave",
+      "version": 1,
+      "status": "experimental",
+      "capability_id": "web.search",
+      "tool_kind": "python",
+      "tool_name": "web.search",
+      "approval": "none",
+      "implementation": {
+        "callable": "app.tools.web_search:search_web"
+      }
+    },
+    {
+      "binding_id": "web.fetch.guarded",
+      "version": 1,
+      "status": "experimental",
+      "capability_id": "web.fetch",
+      "tool_kind": "python",
+      "tool_name": "web.fetch",
+      "approval": "none",
+      "implementation": {
+        "callable": "app.tools.web_fetch:fetch_web"
+      }
+    }
+  ]
 }
