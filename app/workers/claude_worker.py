@@ -11,6 +11,13 @@ from .telemetry import parse_claude_payload
 
 CLAUDE_BIN = "/home/agent/.local/bin/claude"
 
+VALID_TOOL_PROFILES = frozenset(
+    {
+        "default",
+        "reasoning",
+    }
+)
+
 CLAUDE_SECONDARY_SOCKET = (
     "/run/claude-b-worker/worker.sock"
 )
@@ -82,10 +89,10 @@ def _resolve_tool_profile(
         .lower()
     )
 
-    if tool_profile not in {
-        "default",
-        "reasoning",
-    }:
+    if (
+        tool_profile
+        not in VALID_TOOL_PROFILES
+    ):
         raise ValueError(
             "Unknown CLAUDE_TOOL_PROFILE: "
             f"{tool_profile}"
