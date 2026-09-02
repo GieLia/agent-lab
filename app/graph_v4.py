@@ -70,6 +70,11 @@ class ResearchGraphState(
         Any,
     ]
 
+    synthesis_result: dict[
+        str,
+        Any,
+    ]
+
     final_result: str
     status: str
 

@@ -36,28 +36,36 @@ class GraphMeasurementBridge:
         "research-graph-v1-evidence-verifier"
     )
 
-    worker_invocation_ids: list[str] = (
-        field(
-            default_factory=list
-        )
+    critic_worker_id: str = (
+        "research-graph-v1-critic"
     )
 
-    research_worker_invocation_ids: (
-        list[str]
-    ) = field(
+    synthesis_worker_id: str = (
+        "research-graph-v1-synthesizer"
+    )
+
+    worker_invocation_ids: list[str] = field(
         default_factory=list
     )
 
-    semantic_worker_invocation_ids: (
-        list[str]
-    ) = field(
+    research_worker_invocation_ids: list[str] = field(
         default_factory=list
     )
 
-    tool_invocation_ids: list[str] = (
-        field(
-            default_factory=list
-        )
+    semantic_worker_invocation_ids: list[str] = field(
+        default_factory=list
+    )
+
+    critic_worker_invocation_ids: list[str] = field(
+        default_factory=list
+    )
+
+    synthesis_worker_invocation_ids: list[str] = field(
+        default_factory=list
+    )
+
+    tool_invocation_ids: list[str] = field(
+        default_factory=list
     )
 
     latest_research_worker_invocation_id: (
@@ -177,6 +185,52 @@ class GraphMeasurementBridge:
         )
 
 
+    def record_critic_model_result(
+        self,
+        result: WorkerExecutionResult,
+    ) -> None:
+
+        invocation_id = (
+            self._record_worker(
+                worker_id=
+                    self.critic_worker_id,
+
+                role=
+                    "critic",
+
+                result=
+                    result,
+            )
+        )
+
+        self.critic_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
+    def record_synthesis_model_result(
+        self,
+        result: WorkerExecutionResult,
+    ) -> None:
+
+        invocation_id = (
+            self._record_worker(
+                worker_id=
+                    self.synthesis_worker_id,
+
+                role=
+                    "synthesizer",
+
+                result=
+                    result,
+            )
+        )
+
+        self.synthesis_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
     def record_tool_invocation(
         self,
         **kwargs: Any,
@@ -222,7 +276,6 @@ class GraphMeasurementBridge:
             values[
                 "worker_invocation_id"
             ] = worker_invocation_id
-
 
         invocation_id = (
             self.writer
@@ -280,6 +333,18 @@ class GraphMeasurementBridge:
                     .semantic_worker_invocation_ids
                 ),
 
+            "critic_worker_invocation_ids":
+                list(
+                    self
+                    .critic_worker_invocation_ids
+                ),
+
+            "synthesis_worker_invocation_ids":
+                list(
+                    self
+                    .synthesis_worker_invocation_ids
+                ),
+
             "tool_invocation_ids":
                 list(
                     self.tool_invocation_ids
@@ -300,6 +365,18 @@ class GraphMeasurementBridge:
                 len(
                     self
                     .semantic_worker_invocation_ids
+                ),
+
+            "critic_worker_invocation_count":
+                len(
+                    self
+                    .critic_worker_invocation_ids
+                ),
+
+            "synthesis_worker_invocation_count":
+                len(
+                    self
+                    .synthesis_worker_invocation_ids
                 ),
 
             "tool_invocation_count":
