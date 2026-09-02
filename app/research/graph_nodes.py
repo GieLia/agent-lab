@@ -744,3 +744,211 @@ def build_acceptance_gate_node(
         }
 
     return acceptance_gate_node
+
+
+CriticRunner = Callable[
+    ...,
+    Awaitable[
+        dict[str, Any]
+    ],
+]
+
+
+def build_critic_node(
+    *,
+    critic_runner: CriticRunner,
+):
+
+    from app.research.critic_contract import (
+        validate_critic_result,
+    )
+
+    async def critic_node(
+        state: dict[str, Any],
+    ) -> dict[str, Any]:
+
+        integrity = state.get(
+            "structural_integrity"
+        )
+
+        if integrity not in {
+            "pass",
+            "fail",
+        }:
+            _fail(
+                "critic requires explicit "
+                "structural integrity result"
+            )
+
+
+        rejected_claim_ids = state.get(
+            "rejected_claim_ids",
+            [],
+        )
+
+        if not isinstance(
+            rejected_claim_ids,
+            list,
+        ):
+            _fail(
+                "rejected_claim_ids "
+                "must be a list"
+            )
+
+
+        raw = await critic_runner(
+            topic=state.get(
+                "topic"
+            ),
+
+            research_result=
+                copy.deepcopy(
+                    state.get(
+                        "research_result"
+                    )
+                ),
+
+            verification_summary=
+                copy.deepcopy(
+                    state.get(
+                        "verification_summary"
+                    )
+                ),
+
+            structural_integrity=
+                integrity,
+
+            structural_errors=
+                copy.deepcopy(
+                    state.get(
+                        "structural_errors",
+                        [],
+                    )
+                ),
+
+            rejected_claim_ids=
+                list(
+                    rejected_claim_ids
+                ),
+        )
+
+
+        result = validate_critic_result(
+            raw,
+
+            candidate_retry_claim_ids=
+                rejected_claim_ids,
+
+            structural_integrity=
+                integrity,
+        )
+
+
+        return {
+            "critic_result":
+                result,
+
+            "retry_required":
+                result[
+                    "retry_required"
+                ],
+
+            "retry_claim_ids":
+                list(
+                    result[
+                        "retry_claim_ids"
+                    ]
+                ),
+
+            "retry_topic":
+                (
+                    result[
+                        "retry_topic"
+                    ]
+                    or ""
+                ),
+
+            "status":
+                "critic_complete",
+        }
+
+    return critic_node
+
+
+async def synthesis_input_node(
+    state: dict[str, Any],
+) -> dict[str, Any]:
+
+    from app.research.synthesis_input import (
+        build_synthesis_input,
+    )
+
+    mission_id = (
+        _require_state_string(
+            state,
+            "mission_id",
+        )
+    )
+
+    worker_result = state.get(
+        "research_result"
+    )
+
+    verification = state.get(
+        "verification_summary"
+    )
+
+    gate = state.get(
+        "acceptance_gate"
+    )
+
+    if not isinstance(
+        worker_result,
+        dict,
+    ):
+        _fail(
+            "synthesis input requires "
+            "research_result"
+        )
+
+    if not isinstance(
+        verification,
+        dict,
+    ):
+        _fail(
+            "synthesis input requires "
+            "verification_summary"
+        )
+
+    if not isinstance(
+        gate,
+        dict,
+    ):
+        _fail(
+            "synthesis input requires "
+            "acceptance_gate"
+        )
+
+
+    value = build_synthesis_input(
+        mission_id=
+            mission_id,
+
+        worker_result=
+            worker_result,
+
+        verification_summary=
+            verification,
+
+        acceptance_gate=
+            gate,
+    )
+
+
+    return {
+        "synthesis_input":
+            value,
+
+        "status":
+            "synthesis_ready",
+    }
