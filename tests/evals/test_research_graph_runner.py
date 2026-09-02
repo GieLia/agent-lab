@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import tempfile
 import uuid
 
@@ -7,6 +8,7 @@ from pathlib import Path
 
 
 from app.research.graph_runner import (
+    ResearchGraphRunnerError,
     run_research_graph,
 )
 
@@ -252,7 +254,59 @@ def semantic_result():
     }
 
 
+async def check_missing_brave_preflight():
+
+    previous = os.environ.pop(
+        "BRAVE_SEARCH_API_KEY",
+        None,
+    )
+
+    writer = FakeWriter()
+
+    try:
+
+        try:
+
+            await run_research_graph(
+                "Missing Brave credential.",
+                writer=writer,
+            )
+
+        except ResearchGraphRunnerError as exc:
+
+            assert (
+                "BRAVE_SEARCH_API_KEY"
+                in str(exc)
+            )
+
+        else:
+            raise AssertionError(
+                "missing Brave credential "
+                "was accepted"
+            )
+
+        assert writer.case_calls == []
+        assert writer.start_calls == []
+        assert writer.worker_calls == []
+        assert writer.tool_calls == []
+        assert writer.finish_calls == []
+
+    finally:
+
+        if previous is not None:
+            os.environ[
+                "BRAVE_SEARCH_API_KEY"
+            ] = previous
+
+
+    print(
+        "GRAPH_V4_MISSING_BRAVE_PRE_MODEL_REJECTED_OK"
+    )
+
+
 async def main_async():
+
+    await check_missing_brave_preflight()
 
     writer = FakeWriter()
 

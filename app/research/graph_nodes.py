@@ -919,30 +919,91 @@ def build_acceptance_gate_node(
             "structural_integrity"
         )
 
-        if integrity == "fail":
+        worker_result = state.get(
+            "research_result"
+        )
+
+
+        terminal_worker_rejection = (
+            integrity == "fail"
+        )
+
+        if isinstance(
+            worker_result,
+            dict,
+        ):
+
+            claims = worker_result.get(
+                "claims"
+            )
+
+            terminal_worker_rejection = (
+                terminal_worker_rejection
+                or worker_result.get(
+                    "status"
+                )
+                == "failed"
+                or (
+                    isinstance(
+                        claims,
+                        list,
+                    )
+                    and not claims
+                )
+            )
+
+
+        if terminal_worker_rejection:
+
+            reasons = []
 
             errors = state.get(
                 "structural_errors",
                 [],
             )
 
-            rationale = (
-                "WorkerResult rejected by "
-                "runtime structural integrity "
-                "boundary."
-            )
-
             if isinstance(
                 errors,
                 list,
-            ) and errors:
+            ):
+                reasons.extend(
+                    str(item)
+                    for item
+                    in errors
+                    if str(item).strip()
+                )
 
+            if isinstance(
+                worker_result,
+                dict,
+            ):
+
+                gaps = worker_result.get(
+                    "gaps",
+                    [],
+                )
+
+                if isinstance(
+                    gaps,
+                    list,
+                ):
+                    reasons.extend(
+                        str(item)
+                        for item
+                        in gaps
+                        if str(item).strip()
+                    )
+
+            rationale = (
+                "WorkerResult rejected by "
+                "runtime research boundary."
+            )
+
+            if reasons:
                 rationale += (
                     " "
                     + "; ".join(
-                        str(item)
-                        for item
-                        in errors
+                        reasons
                     )
                 )
 
@@ -962,14 +1023,6 @@ def build_acceptance_gate_node(
 
         elif integrity == "pass":
 
-            worker_result = state.get(
-                "research_result"
-            )
-
-            verification = state.get(
-                "verification_summary"
-            )
-
             if not isinstance(
                 worker_result,
                 dict,
@@ -978,6 +1031,10 @@ def build_acceptance_gate_node(
                     "research_result must "
                     "be an object"
                 )
+
+            verification = state.get(
+                "verification_summary"
+            )
 
             if not isinstance(
                 verification,
@@ -1005,6 +1062,7 @@ def build_acceptance_gate_node(
                 "explicit structural "
                 "integrity result"
             )
+
 
         return {
             "acceptance_gate":
@@ -1080,11 +1138,18 @@ def build_critic_node(
             )
 
 
-        if integrity == "pass":
+        worker_result = state.get(
+            "research_result"
+        )
 
-            worker_result = state.get(
-                "research_result"
-            )
+
+        terminal_research_failure = (
+            integrity == "fail"
+        )
+
+        if (
+            integrity == "pass"
+        ):
 
             if not isinstance(
                 worker_result,
@@ -1094,6 +1159,114 @@ def build_critic_node(
                     "critic requires "
                     "research_result"
                 )
+
+            claims = worker_result.get(
+                "claims"
+            )
+
+            if not isinstance(
+                claims,
+                list,
+            ):
+                _fail(
+                    "research_result claims "
+                    "must be a list"
+                )
+
+            terminal_research_failure = (
+                worker_result.get(
+                    "status"
+                )
+                == "failed"
+                or not claims
+            )
+
+
+        if terminal_research_failure:
+
+            missing_evidence = []
+
+            structural_errors = state.get(
+                "structural_errors",
+                [],
+            )
+
+            if isinstance(
+                structural_errors,
+                list,
+            ):
+                missing_evidence.extend(
+                    str(item)
+                    for item
+                    in structural_errors
+                    if str(item).strip()
+                )
+
+            if isinstance(
+                worker_result,
+                dict,
+            ):
+
+                gaps = worker_result.get(
+                    "gaps",
+                    [],
+                )
+
+                if isinstance(
+                    gaps,
+                    list,
+                ):
+                    missing_evidence.extend(
+                        str(item)
+                        for item
+                        in gaps
+                        if str(item).strip()
+                    )
+
+            if not missing_evidence:
+                missing_evidence = [
+                    (
+                        "Researcher produced no "
+                        "usable factual claims."
+                    )
+                ]
+
+            raw = {
+                "retry_required":
+                    False,
+
+                "retry_claim_ids":
+                    [],
+
+                "missing_evidence":
+                    missing_evidence,
+
+                "retry_topic":
+                    None,
+
+                "critique":
+                    (
+                        "Researcher result is "
+                        "terminally unusable for "
+                        "claim-level retry in "
+                        "Research Graph v1."
+                    ),
+            }
+
+            result = validate_critic_result(
+                raw,
+
+                candidate_retry_claim_ids=
+                    [],
+
+                structural_integrity=(
+                    "fail"
+                    if integrity == "fail"
+                    else "pass"
+                ),
+            )
+
+        else:
 
             factual_claim_ids = {
                 item[
@@ -1122,64 +1295,55 @@ def build_critic_node(
                 )
             ]
 
-        else:
-
-            # Structural failure is terminal at
-            # claim-level retry in E5-D2.
-            candidate_retry_claim_ids = []
-
-
-        raw = await critic_runner(
-            topic=state.get(
-                "topic"
-            ),
-
-            research_result=
-                copy.deepcopy(
-                    state.get(
-                        "research_result"
-                    )
+            raw = await critic_runner(
+                topic=state.get(
+                    "topic"
                 ),
 
-            verification_summary=
-                copy.deepcopy(
-                    state.get(
-                        "verification_summary"
-                    )
-                ),
+                research_result=
+                    copy.deepcopy(
+                        worker_result
+                    ),
 
-            structural_integrity=
-                integrity,
+                verification_summary=
+                    copy.deepcopy(
+                        state.get(
+                            "verification_summary"
+                        )
+                    ),
 
-            structural_errors=
-                copy.deepcopy(
-                    state.get(
-                        "structural_errors",
-                        [],
-                    )
-                ),
+                structural_integrity=
+                    integrity,
 
-            rejected_claim_ids=
-                list(
-                    rejected_claim_ids
-                ),
+                structural_errors=
+                    copy.deepcopy(
+                        state.get(
+                            "structural_errors",
+                            [],
+                        )
+                    ),
 
-            candidate_retry_claim_ids=
-                list(
-                    candidate_retry_claim_ids
-                ),
-        )
+                rejected_claim_ids=
+                    list(
+                        rejected_claim_ids
+                    ),
+
+                candidate_retry_claim_ids=
+                    list(
+                        candidate_retry_claim_ids
+                    ),
+            )
 
 
-        result = validate_critic_result(
-            raw,
+            result = validate_critic_result(
+                raw,
 
-            candidate_retry_claim_ids=
-                candidate_retry_claim_ids,
+                candidate_retry_claim_ids=
+                    candidate_retry_claim_ids,
 
-            structural_integrity=
-                integrity,
-        )
+                structural_integrity=
+                    integrity,
+            )
 
 
         return {

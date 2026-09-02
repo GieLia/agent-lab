@@ -236,6 +236,12 @@ async def evaluate_research_critic(
     timeout: int = 180,
     model_call: ModelCall =
         run_claude_detailed,
+    result_observer:
+        Callable[
+            [WorkerExecutionResult],
+            None,
+        ]
+        | None = None,
 ) -> tuple[
     dict[str, Any],
     WorkerExecutionResult,
@@ -294,6 +300,11 @@ async def evaluate_research_critic(
         _fail(
             "Critic returned unexpected "
             "execution result type"
+        )
+
+    if result_observer is not None:
+        result_observer(
+            result
         )
 
     value = _parse_object(
@@ -382,6 +393,12 @@ async def synthesize_verified_material(
     timeout: int = 180,
     model_call: ModelCall =
         run_claude_detailed,
+    result_observer:
+        Callable[
+            [WorkerExecutionResult],
+            None,
+        ]
+        | None = None,
 ) -> tuple[
     dict[str, Any],
     WorkerExecutionResult,
@@ -444,6 +461,11 @@ async def synthesize_verified_material(
             "execution result type"
         )
 
+    if result_observer is not None:
+        result_observer(
+            result
+        )
+
     value = validate_synthesis_result(
         _parse_object(
             result.text,
@@ -481,17 +503,16 @@ def build_measured_critic_runner(
                 account=account,
                 timeout=timeout,
                 model_call=model_call,
+                result_observer=(
+                    measurement_bridge
+                    .record_critic_model_result
+                    if measurement_bridge
+                    is not None
+                    else None
+                ),
                 **kwargs,
             )
         )
-
-        if measurement_bridge is not None:
-            (
-                measurement_bridge
-                .record_critic_model_result(
-                    execution
-                )
-            )
 
         return value
 
@@ -560,16 +581,16 @@ def build_measured_synthesis_node(
 
                 model_call=
                     model_call,
+
+                result_observer=(
+                    measurement_bridge
+                    .record_synthesis_model_result
+                    if measurement_bridge
+                    is not None
+                    else None
+                ),
             )
         )
-
-        if measurement_bridge is not None:
-            (
-                measurement_bridge
-                .record_synthesis_model_result(
-                    execution
-                )
-            )
 
         node_result = {
             "synthesis_result":

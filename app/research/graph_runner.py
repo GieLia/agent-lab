@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import subprocess
 import uuid
 
@@ -82,6 +83,40 @@ class ResearchGraphRunnerError(
     RuntimeError
 ):
     pass
+
+
+def _preflight_external_research(
+    *,
+    research_runner: Any,
+) -> None:
+
+    # The default E5 v1 Researcher uses Brave
+    # through the controlled runtime tool boundary.
+    #
+    # Injected test/custom ResearchRunner instances
+    # are not forced to depend on Brave.
+    if (
+        research_runner
+        is not run_research_tool_loop
+    ):
+        return
+
+    key = os.environ.get(
+        "BRAVE_SEARCH_API_KEY"
+    )
+
+    if (
+        not isinstance(
+            key,
+            str,
+        )
+        or not key.strip()
+    ):
+        raise ResearchGraphRunnerError(
+            "BRAVE_SEARCH_API_KEY is required "
+            "for the real external-web "
+            "Researcher runtime"
+        )
 
 
 def _write_json(
@@ -177,6 +212,11 @@ async def run_research_graph(
         )
 
     topic = topic.strip()
+
+    _preflight_external_research(
+        research_runner=
+            research_runner,
+    )
 
     if writer is None:
         writer = MeasurementWriter(
