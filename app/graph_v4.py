@@ -36,6 +36,7 @@ class ResearchGraphState(
     max_iterations: int
 
     research_result: dict[str, Any]
+    research_metrics: dict[str, Any]
 
     structural_integrity: str
     structural_errors: list[str]

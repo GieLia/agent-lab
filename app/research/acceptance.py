@@ -317,3 +317,229 @@ def build_acceptance_gate(
         )
 
     return gate
+
+
+def build_rejected_worker_gate(
+    *,
+    mission_id: str,
+    worker_id: str,
+    rationale: str,
+    gate_id: str | None = None,
+    created_at: str | None = None,
+    actor_id: str =
+        "e5-runtime-integrity-v1",
+) -> dict[str, Any]:
+
+    if (
+        not isinstance(
+            mission_id,
+            str,
+        )
+        or not mission_id.strip()
+    ):
+        _fail(
+            "mission_id must be "
+            "a non-empty string"
+        )
+
+    if (
+        not isinstance(
+            worker_id,
+            str,
+        )
+        or not worker_id.strip()
+    ):
+        _fail(
+            "worker_id must be "
+            "a non-empty string"
+        )
+
+    if (
+        not isinstance(
+            rationale,
+            str,
+        )
+        or not rationale.strip()
+    ):
+        _fail(
+            "rationale must be "
+            "a non-empty string"
+        )
+
+    if gate_id is None:
+        gate_id = (
+            "gate-"
+            + str(
+                uuid.uuid4()
+            )
+        )
+
+    if created_at is None:
+        created_at = _now()
+
+    gate = {
+        "gate_id":
+            gate_id,
+
+        "mission_id":
+            mission_id.strip(),
+
+        "decision":
+            "rejected",
+
+        "accepted_worker_ids":
+            [],
+
+        "accepted_claim_ids":
+            [],
+
+        "rejected_claim_ids":
+            [],
+
+        "decided_by": {
+            "actor_type":
+                "runtime",
+
+            "actor_id":
+                actor_id,
+        },
+
+        "rationale":
+            rationale.strip(),
+
+        "created_at":
+            created_at,
+
+        "rejected_worker_ids": [
+            worker_id.strip(),
+        ],
+    }
+
+    try:
+        Draft202012Validator(
+            ACCEPTANCE_GATE_SCHEMA
+        ).validate(
+            gate
+        )
+
+    except Exception as exc:
+        raise AcceptancePolicyError(
+            "generated rejected-worker "
+            "AcceptanceGate failed "
+            "canonical schema"
+        ) from exc
+
+    return gate
+
+
+def build_rejected_worker_gate(
+    *,
+    mission_id: str,
+    worker_id: str,
+    rationale: str,
+    gate_id: str | None = None,
+    created_at: str | None = None,
+    actor_id: str =
+        "e5-runtime-integrity-v1",
+) -> dict[str, Any]:
+
+    if (
+        not isinstance(
+            mission_id,
+            str,
+        )
+        or not mission_id.strip()
+    ):
+        _fail(
+            "mission_id must be "
+            "a non-empty string"
+        )
+
+    if (
+        not isinstance(
+            worker_id,
+            str,
+        )
+        or not worker_id.strip()
+    ):
+        _fail(
+            "worker_id must be "
+            "a non-empty string"
+        )
+
+    if (
+        not isinstance(
+            rationale,
+            str,
+        )
+        or not rationale.strip()
+    ):
+        _fail(
+            "rationale must be "
+            "a non-empty string"
+        )
+
+    if gate_id is None:
+        gate_id = (
+            "gate-"
+            + str(
+                uuid.uuid4()
+            )
+        )
+
+    if created_at is None:
+        created_at = _now()
+
+    gate = {
+        "gate_id":
+            gate_id,
+
+        "mission_id":
+            mission_id.strip(),
+
+        "decision":
+            "rejected",
+
+        "accepted_worker_ids":
+            [],
+
+        "accepted_claim_ids":
+            [],
+
+        "rejected_claim_ids":
+            [],
+
+        "decided_by": {
+            "actor_type":
+                "runtime",
+
+            "actor_id":
+                actor_id,
+        },
+
+        "rationale":
+            rationale.strip(),
+
+        "created_at":
+            created_at,
+
+        "rejected_worker_ids": [
+            worker_id.strip(),
+        ],
+    }
+
+    try:
+        Draft202012Validator(
+            ACCEPTANCE_GATE_SCHEMA
+        ).validate(
+            gate
+        )
+
+    except Exception as exc:
+        raise AcceptancePolicyError(
+            "generated rejected-worker "
+            "AcceptanceGate failed "
+            "canonical schema"
+        ) from exc
+
+    return gate
