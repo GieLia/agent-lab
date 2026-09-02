@@ -1,0 +1,12 @@
+{
+  "case_id": "external_web_research_v1",
+  "required_anchor_points": [
+    "Identify Python venv as the standard-library facility for creating virtual environments.",
+    "Explain that virtual environments maintain their own Python package installation context.",
+    "Identify the official creation command 'python -m venv /path/to/new/virtual/environment'.",
+    "Use the official Python documentation as authoritative evidence.",
+    "Retrieve the underlying source rather than treating a search snippet as sufficient evidence.",
+    "Preserve Source, Evidence and Claim linkage.",
+    "Preserve runtime provenance for the retrieved web source."
+  ]
+}

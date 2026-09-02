@@ -1,0 +1,14 @@
+{
+  "case_id": "external_web_research_v1",
+  "version": 1,
+  "objective": "Using authoritative sources, determine what Python's standard-library venv module is used for and identify the command shown in the official Python documentation for creating a virtual environment. Use fetched source evidence rather than relying only on search-result snippets.",
+  "constraints": [
+    "Use real external web search and guarded web fetch.",
+    "Fetch only URLs discovered through the authorized search capability.",
+    "Prefer an authoritative primary source for the requested factual answer.",
+    "Do not treat search-result snippets alone as verified evidence.",
+    "Do not invent sources or URLs.",
+    "Do not invent evidence excerpts.",
+    "Return canonical Claim-Evidence-Source traceability."
+  ]
+}

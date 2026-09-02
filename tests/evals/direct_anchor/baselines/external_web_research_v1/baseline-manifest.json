@@ -1,0 +1,12 @@
+{
+  "manifest_version": 1,
+  "case_id": "external_web_research_v1",
+  "run_id": "7a8e5eac-07c0-41de-b412-10b06f37e6b3",
+  "files": {
+    "tests/evals/direct_anchor/baselines/external_web_research_v1/metadata.json": "ec3ce29e0f948c458165bf573b8feeea9b15dd54bd38b7b4c032437694567154",
+    "tests/evals/direct_anchor/baselines/external_web_research_v1/worker-result.json": "1230f1eb25241d4a9c6fe9a9b1c9181172d0fe8fb40a2b79c3c474b70841baf0",
+    "tests/evals/direct_anchor/baselines/external_web_research_v1/human-evaluation.json": "50e4fb570d4528d26aa08900afc9ddc0190de78d4366f3d783292626c2f369c4",
+    "tests/evals/direct_anchor/external_web_case_v1.json": "42d093423207f32fd8128f51f6de5036699707cdc5c66ae934d5dd40c2d6f015",
+    "tests/evals/direct_anchor/external_web_human_reference_v1.json": "6411852b365d9460a2c73c197be035d266a8111fa0a4858e3eaf7f314bed1509"
+  }
+}

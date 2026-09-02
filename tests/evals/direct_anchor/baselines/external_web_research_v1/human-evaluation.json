@@ -1,0 +1,114 @@
+{
+  "evaluation_version": 1,
+  "case_id": "external_web_research_v1",
+  "run_id": "7a8e5eac-07c0-41de-b412-10b06f37e6b3",
+  "evaluator_type": "human-anchor",
+  "verdict": "pass_with_findings",
+  "criteria_total": 7,
+  "criteria_passed": 7,
+  "criteria": [
+    {
+      "id": "W1",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1"
+      ],
+      "description": "The result identifies the purpose of Python's venv module."
+    },
+    {
+      "id": "W2",
+      "status": "pass",
+      "claim_refs": [
+        "claim-2"
+      ],
+      "description": "The result identifies the official python -m venv creation command."
+    },
+    {
+      "id": "W3",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1",
+        "claim-2",
+        "claim-3"
+      ],
+      "description": "The source is the authoritative docs.python.org venv documentation."
+    },
+    {
+      "id": "W4",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1",
+        "claim-2",
+        "claim-3"
+      ],
+      "description": "The underlying source was fetched and preserved with retrieval provenance."
+    },
+    {
+      "id": "W5",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1",
+        "claim-2",
+        "claim-3"
+      ],
+      "description": "All material factual claims have Claim-Evidence-Source links."
+    },
+    {
+      "id": "W6",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1",
+        "claim-2",
+        "claim-3"
+      ],
+      "description": "All preserved evidence excerpts exist in the fetched source content."
+    },
+    {
+      "id": "W7",
+      "status": "pass",
+      "claim_refs": [
+        "claim-1",
+        "claim-2",
+        "claim-3"
+      ],
+      "description": "The real run preserved runtime tool separation: Claude reasoning profile with zero native tools and runtime research-readonly web capabilities."
+    }
+  ],
+  "quality_dimensions": {
+    "runtime_security": "pass",
+    "source_provenance": "pass",
+    "schema_integrity": "pass",
+    "evidence_excerpt_existence": "pass",
+    "claim_evidence_semantic_coverage": "partial"
+  },
+  "findings": [
+    {
+      "id": "WEB-HAF-001",
+      "severity": "medium",
+      "category": "claim-evidence-entailment",
+      "claim_id": "claim-1",
+      "evidence_id": "ev-1",
+      "issue": "The claim additionally states that virtual environments are isolated by default from packages in the base Python installation. The preserved evidence excerpt directly supports the independent package-set portion but does not itself demonstrate the full isolation-by-default clause.",
+      "baseline_action": "Preserve this defect in the frozen baseline. Later systems should either split compound claims or attach evidence that semantically covers every material factual clause."
+    },
+    {
+      "id": "WEB-HAF-002",
+      "severity": "medium",
+      "category": "claim-evidence-entailment",
+      "claim_id": "claim-2",
+      "evidence_id": "ev-2",
+      "issue": "The claim additionally includes a Windows-specific C:\\\\path example. The preserved evidence excerpt directly supports the generic official python -m venv /path/to/new/virtual/environment command but does not itself contain the Windows-specific example.",
+      "baseline_action": "Preserve this defect. Later systems should avoid attaching a broader claim to evidence that covers only part of it."
+    },
+    {
+      "id": "WEB-HAF-003",
+      "severity": "medium",
+      "category": "model-provenance",
+      "issue": "The exact resolved Claude model is not captured; WorkerResult.model is null.",
+      "baseline_action": "Do not regenerate this baseline. Capture resolved model provenance when the worker interface exposes it."
+    }
+  ],
+  "baseline_locked": true,
+  "regeneration_allowed": false,
+  "notes": "This evaluation freezes the first successfully verified real external-web Direct Anchor. Known semantic evidence defects are intentionally preserved so later research architectures can be measured against the same artifact."
+}

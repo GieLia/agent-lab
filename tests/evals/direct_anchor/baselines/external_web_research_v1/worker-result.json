@@ -1,0 +1,86 @@
+{
+  "worker_id": "direct-web-researcher-v1",
+  "role": "researcher",
+  "status": "success",
+  "claims": [
+    {
+      "claim_id": "claim-1",
+      "text": "The venv module in Python's standard library supports creating lightweight 'virtual environments', each with their own independent set of Python packages installed in their site directories, isolated by default from packages in the base Python installation.",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "claim-2",
+      "text": "The official Python documentation shows that virtual environments are created by executing the venv module via the command: 'python -m venv /path/to/new/virtual/environment' (on Windows: 'python -m venv C:\\path\\to\\new\\virtual\\environment').",
+      "claim_type": "fact",
+      "importance": "high",
+      "verification_status": "verified"
+    },
+    {
+      "claim_id": "claim-3",
+      "text": "When used from within a virtual environment, common installation tools such as pip will install Python packages into that virtual environment without needing to be told to do so explicitly.",
+      "claim_type": "fact",
+      "importance": "medium",
+      "verification_status": "verified"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "source-001",
+      "source_type": "web",
+      "title": "venv — Creation of virtual environments — Python 3.14.7 documentation",
+      "url": "https://docs.python.org/3/library/venv.html",
+      "publisher": null,
+      "published_at": null,
+      "retrieved_at": "2026-09-02T19:24:48.585847+00:00",
+      "content_hash": "114279d254facdbd0ff047721ffb9c46a04d7dc4f02233e7ece2514cb24a042c",
+      "metadata": {
+        "requested_url": "https://docs.python.org/3/library/venv.html",
+        "search_discovered": true,
+        "status_code": 200,
+        "content_type": "text/html",
+        "byte_count": 102811,
+        "text_char_count": 25436,
+        "truncated": false
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev-1",
+      "claim_id": "claim-1",
+      "source_id": "source-001",
+      "relationship": "supports",
+      "excerpt": "The venv module supports creating lightweight “virtual environments”, each with their own independent set of Python packages installed in their site directories.",
+      "location": "Introductory paragraph",
+      "strength": "strong",
+      "notes": null
+    },
+    {
+      "evidence_id": "ev-2",
+      "claim_id": "claim-2",
+      "source_id": "source-001",
+      "relationship": "supports",
+      "excerpt": "Virtual environments are created by executing the venv module: python -m venv /path/to/new/virtual/environment",
+      "location": "Section 'Creating virtual environments'",
+      "strength": "strong",
+      "notes": null
+    },
+    {
+      "evidence_id": "ev-3",
+      "claim_id": "claim-3",
+      "source_id": "source-001",
+      "relationship": "supports",
+      "excerpt": "When used from within a virtual environment, common installation tools such as pip will install Python packages into a virtual environment without needing to be told to do so explicitly.",
+      "location": "Introductory paragraph",
+      "strength": "strong",
+      "notes": null
+    }
+  ],
+  "gaps": [],
+  "notes": "Evidence drawn from the official Python 3.14 documentation page for the venv module (docs.python.org/3/library/venv.html), which is the authoritative source for this standard-library module's purpose and usage.",
+  "provider": "claude",
+  "account": "primary",
+  "model": null
+}
