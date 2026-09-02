@@ -677,23 +677,97 @@ async def check_structural_rejection():
     )
 
 
-async def check_retry_guard():
+async def check_retry_execution():
 
-    calls = []
+    topics = []
 
 
-    async def forbidden_runner(
-        *args,
+    async def retry_runner(
+        topic,
         **kwargs,
     ):
 
-        calls.append(
-            True
+        topics.append(
+            topic
         )
 
-        raise AssertionError(
-            "research runner must "
-            "not execute"
+        return ResearchLoopResult(
+            worker_result={
+                "worker_id":
+                    "research-graph-v1-researcher",
+
+                "role":
+                    "researcher",
+
+                "provider":
+                    "claude",
+
+                "account":
+                    "primary",
+
+                "model":
+                    None,
+
+                "status":
+                    "success",
+
+                "claims": [
+                    {
+                        "claim_id":
+                            "claim-partial",
+
+                        "text":
+                            "VM has RAM and four CPUs.",
+
+                        "claim_type":
+                            "fact",
+                    }
+                ],
+
+                "sources": [
+                    {
+                        "source_id":
+                            "source-1",
+
+                        "source_type":
+                            "internal",
+
+                        "title":
+                            "Retry source",
+                    }
+                ],
+
+                "evidence": [
+                    {
+                        "evidence_id":
+                            "ev-retry",
+
+                        "claim_id":
+                            "claim-partial",
+
+                        "source_id":
+                            "source-1",
+
+                        "relationship":
+                            "supports",
+
+                        "excerpt":
+                            "VM has RAM and four CPUs.",
+                    }
+                ],
+
+                "gaps":
+                    [],
+
+                "notes":
+                    None,
+            },
+
+            steps=2,
+            model_calls=2,
+            search_calls=1,
+            fetch_calls=1,
+            sources_retrieved=1,
         )
 
 
@@ -702,13 +776,14 @@ async def check_retry_guard():
             cwd=ROOT,
 
             research_runner=
-                forbidden_runner,
+                retry_runner,
         )
     )
 
     node = build_research_node(
         dependencies
     )
+
 
     state = {
         "topic":
@@ -726,42 +801,147 @@ async def check_retry_guard():
         "max_iterations":
             2,
 
+        "research_result":
+            canonical_worker_result(),
+
+        "research_metrics": {
+            "steps": 4,
+            "model_calls": 4,
+            "search_calls": 1,
+            "fetch_calls": 1,
+            "sources_retrieved": 1,
+        },
+
         "retry_required":
             True,
 
         "retry_claim_ids": [
-            "claim-1"
+            "claim-partial"
         ],
 
         "retry_topic":
             "Find better evidence.",
     }
 
-    try:
 
-        await node(
-            state
-        )
-
-    except GraphNodeAdapterError as exc:
-
-        assert (
-            "WorkerResult merge"
-            in str(exc)
-        )
-
-    else:
-        raise AssertionError(
-            "unsafe retry overwrite "
-            "was accepted"
-        )
-
-    assert calls == []
-
-    print(
-        "TARGETED_RETRY_OVERWRITE_BLOCKED_OK"
+    result = await node(
+        state
     )
 
+
+    assert topics == [
+        "Find better evidence."
+    ]
+
+    assert (
+        result[
+            "iteration"
+        ]
+        == 2
+    )
+
+    assert (
+        result[
+            "status"
+        ]
+        == "research_retried"
+    )
+
+
+    merged = result[
+        "research_result"
+    ]
+
+    assert (
+        merged[
+            "claims"
+        ][0][
+            "claim_id"
+        ]
+        == "claim-full"
+    )
+
+    assert (
+        "retry-2-source-1"
+        in {
+            item[
+                "source_id"
+            ]
+            for item
+            in merged[
+                "sources"
+            ]
+        }
+    )
+
+    assert (
+        "retry-2-ev-retry"
+        in {
+            item[
+                "evidence_id"
+            ]
+            for item
+            in merged[
+                "evidence"
+            ]
+        }
+    )
+
+
+    assert (
+        result[
+            "research_metrics"
+        ]
+        == {
+            "steps": 6,
+            "model_calls": 6,
+            "search_calls": 2,
+            "fetch_calls": 2,
+            "sources_retrieved": 2,
+        }
+    )
+
+
+    assert (
+        result[
+            "semantic_records"
+        ]
+        == []
+    )
+
+    assert (
+        result[
+            "verification_summary"
+        ]
+        == {}
+    )
+
+    assert (
+        result[
+            "acceptance_gate"
+        ]
+        == {}
+    )
+
+    assert (
+        result[
+            "retry_required"
+        ]
+        is False
+    )
+
+
+    print(
+        "TARGETED_RETRY_EXECUTION_OK"
+    )
+
+    print(
+        "TARGETED_RETRY_MERGE_IN_GRAPH_OK"
+    )
+
+    print(
+        "TARGETED_RETRY_DERIVED_AUTHORITY_CLEARED_OK"
+    )
 
 def main():
 
@@ -774,7 +954,7 @@ def main():
     )
 
     asyncio.run(
-        check_retry_guard()
+        check_retry_execution()
     )
 
     print()

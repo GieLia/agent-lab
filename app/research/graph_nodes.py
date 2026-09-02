@@ -35,6 +35,11 @@ from app.research.verification import (
     build_verification_summary,
 )
 
+from app.research.retry_merge import (
+    RetryMergeError,
+    merge_retry_worker_result,
+)
+
 
 class GraphNodeAdapterError(
     RuntimeError
@@ -118,6 +123,72 @@ def _require_state_string(
     return value.strip()
 
 
+def _accumulate_research_metrics(
+    previous: Any,
+    result: ResearchLoopResult,
+) -> dict[str, int]:
+
+    current = {
+        "steps":
+            result.steps,
+
+        "model_calls":
+            result.model_calls,
+
+        "search_calls":
+            result.search_calls,
+
+        "fetch_calls":
+            result.fetch_calls,
+
+        "sources_retrieved":
+            result.sources_retrieved,
+    }
+
+    if previous is None:
+        return current
+
+    if not isinstance(
+        previous,
+        dict,
+    ):
+        _fail(
+            "research_metrics must "
+            "be an object"
+        )
+
+    merged = {}
+
+    for key, value in current.items():
+
+        old = previous.get(
+            key,
+            0,
+        )
+
+        if (
+            isinstance(
+                old,
+                bool,
+            )
+            or not isinstance(
+                old,
+                int,
+            )
+            or old < 0
+        ):
+            _fail(
+                "invalid accumulated "
+                f"research metric: {key}"
+            )
+
+        merged[
+            key
+        ] = old + value
+
+    return merged
+
+
 def build_research_node(
     dependencies: GraphNodeDependencies,
 ):
@@ -147,27 +218,126 @@ def build_research_node(
                 "an integer >= 0"
             )
 
-        if raw_iteration > 0:
 
-            if state.get(
-                "retry_required"
-            ) is True:
-                _fail(
-                    "targeted research retry "
-                    "requires WorkerResult merge "
-                    "semantics and is not enabled "
-                    "in E5-C3"
-                )
+        raw_max_iterations = state.get(
+            "max_iterations",
+            1,
+        )
 
+        if (
+            isinstance(
+                raw_max_iterations,
+                bool,
+            )
+            or not isinstance(
+                raw_max_iterations,
+                int,
+            )
+            or raw_max_iterations < 1
+        ):
             _fail(
-                "research node cannot overwrite "
-                "an existing research iteration"
+                "max_iterations must be "
+                "an integer >= 1"
             )
 
-        topic = _require_state_string(
-            state,
-            "topic",
+
+        is_retry = (
+            raw_iteration > 0
         )
+
+
+        if is_retry:
+
+            if (
+                state.get(
+                    "retry_required"
+                )
+                is not True
+            ):
+                _fail(
+                    "research retry requires "
+                    "retry_required=true"
+                )
+
+            if (
+                raw_iteration
+                >= raw_max_iterations
+            ):
+                _fail(
+                    "research retry budget "
+                    "is exhausted"
+                )
+
+            retry_claim_ids = state.get(
+                "retry_claim_ids"
+            )
+
+            if (
+                not isinstance(
+                    retry_claim_ids,
+                    list,
+                )
+                or not retry_claim_ids
+                or any(
+                    not isinstance(
+                        item,
+                        str,
+                    )
+                    or not item.strip()
+                    for item
+                    in retry_claim_ids
+                )
+            ):
+                _fail(
+                    "retry_claim_ids must "
+                    "contain factual targets"
+                )
+
+            topic = (
+                _require_state_string(
+                    state,
+                    "retry_topic",
+                )
+            )
+
+            base_result = state.get(
+                "research_result"
+            )
+
+            if not isinstance(
+                base_result,
+                dict,
+            ):
+                _fail(
+                    "targeted retry requires "
+                    "existing research_result"
+                )
+
+            try:
+                validate_worker_result(
+                    base_result,
+                    expected_worker_id=
+                        dependencies
+                        .research_worker_id,
+                )
+
+            except ResearchProtocolError as exc:
+                raise GraphNodeAdapterError(
+                    "existing WorkerResult "
+                    "failed retry validation"
+                ) from exc
+
+        else:
+
+            topic = (
+                _require_state_string(
+                    state,
+                    "topic",
+                )
+            )
+
+            retry_claim_ids = []
+
 
         result = await (
             dependencies
@@ -184,6 +354,7 @@ def build_research_node(
             )
         )
 
+
         if not isinstance(
             result,
             ResearchLoopResult,
@@ -193,15 +364,17 @@ def build_research_node(
                 "unexpected result type"
             )
 
-        worker_result = (
+
+        incoming_result = (
             copy.deepcopy(
                 result.worker_result
             )
         )
 
+
         try:
             validate_worker_result(
-                worker_result,
+                incoming_result,
                 expected_worker_id=
                     dependencies
                     .research_worker_id,
@@ -213,31 +386,67 @@ def build_research_node(
                 "invalid canonical WorkerResult"
             ) from exc
 
+
+        next_iteration = (
+            raw_iteration
+            + 1
+        )
+
+
+        if is_retry:
+
+            try:
+                worker_result = (
+                    merge_retry_worker_result(
+                        base_result=
+                            base_result,
+
+                        retry_result=
+                            incoming_result,
+
+                        retry_claim_ids=
+                            retry_claim_ids,
+
+                        iteration=
+                            next_iteration,
+                    )
+                )
+
+            except RetryMergeError as exc:
+                raise GraphNodeAdapterError(
+                    "targeted retry merge "
+                    "was rejected"
+                ) from exc
+
+        else:
+
+            worker_result = (
+                incoming_result
+            )
+
+
+        metrics = (
+            _accumulate_research_metrics(
+                state.get(
+                    "research_metrics"
+                ),
+                result,
+            )
+        )
+
+
         return {
             "iteration":
-                1,
+                next_iteration,
 
             "research_result":
                 worker_result,
 
-            "research_metrics": {
-                "steps":
-                    result.steps,
+            "research_metrics":
+                metrics,
 
-                "model_calls":
-                    result.model_calls,
-
-                "search_calls":
-                    result.search_calls,
-
-                "fetch_calls":
-                    result.fetch_calls,
-
-                "sources_retrieved":
-                    result.sources_retrieved,
-            },
-
-            # Clear any stale derived authority.
+            # Every research iteration invalidates
+            # all downstream derived authority.
             "structural_integrity":
                 "",
 
@@ -256,6 +465,9 @@ def build_research_node(
             "rejected_claim_ids":
                 [],
 
+            "critic_result":
+                {},
+
             "acceptance_gate":
                 {},
 
@@ -268,8 +480,15 @@ def build_research_node(
             "retry_claim_ids":
                 [],
 
+            "retry_topic":
+                "",
+
             "status":
-                "researched",
+                (
+                    "research_retried"
+                    if is_retry
+                    else "researched"
+                ),
         }
 
     return research_node
@@ -796,6 +1015,55 @@ def build_critic_node(
             )
 
 
+        if integrity == "pass":
+
+            worker_result = state.get(
+                "research_result"
+            )
+
+            if not isinstance(
+                worker_result,
+                dict,
+            ):
+                _fail(
+                    "critic requires "
+                    "research_result"
+                )
+
+            factual_claim_ids = {
+                item[
+                    "claim_id"
+                ]
+                for item
+                in worker_result.get(
+                    "claims",
+                    [],
+                )
+                if (
+                    item.get(
+                        "claim_type"
+                    )
+                    == "fact"
+                )
+            }
+
+            candidate_retry_claim_ids = [
+                claim_id
+                for claim_id
+                in rejected_claim_ids
+                if (
+                    claim_id
+                    in factual_claim_ids
+                )
+            ]
+
+        else:
+
+            # Structural failure is terminal at
+            # claim-level retry in E5-D2.
+            candidate_retry_claim_ids = []
+
+
         raw = await critic_runner(
             topic=state.get(
                 "topic"
@@ -830,6 +1098,11 @@ def build_critic_node(
                 list(
                     rejected_claim_ids
                 ),
+
+            candidate_retry_claim_ids=
+                list(
+                    candidate_retry_claim_ids
+                ),
         )
 
 
@@ -837,7 +1110,7 @@ def build_critic_node(
             raw,
 
             candidate_retry_claim_ids=
-                rejected_claim_ids,
+                candidate_retry_claim_ids,
 
             structural_integrity=
                 integrity,
