@@ -40,6 +40,10 @@ from app.research.retry_merge import (
     merge_retry_worker_result,
 )
 
+from app.research.graph_measurement import (
+    GraphMeasurementBridge,
+)
+
 
 class GraphNodeAdapterError(
     RuntimeError
@@ -80,6 +84,8 @@ class GraphNodeDependencies:
     semantic_account: str = "primary"
 
     semantic_timeout: int = 180
+
+    measurement_bridge: GraphMeasurementBridge | None = None
 
     research_runner: ResearchRunner = (
         run_research_tool_loop
@@ -339,6 +345,11 @@ def build_research_node(
             retry_claim_ids = []
 
 
+        bridge = (
+            dependencies
+            .measurement_bridge
+        )
+
         result = await (
             dependencies
             .research_runner(
@@ -351,6 +362,25 @@ def build_research_node(
                 account=
                     dependencies
                     .research_account,
+
+                model_result_observer=(
+                    bridge
+                    .record_research_model_result
+                    if bridge is not None
+                    else None
+                ),
+
+                measurement_writer=
+                    bridge,
+
+                run_id=(
+                    bridge.run_id
+                    if bridge is not None
+                    else None
+                ),
+
+                worker_invocation_id=
+                    None,
             )
         )
 
@@ -435,7 +465,7 @@ def build_research_node(
         )
 
 
-        return {
+        node_result = {
             "iteration":
                 next_iteration,
 
@@ -490,6 +520,13 @@ def build_research_node(
                     else "researched"
                 ),
         }
+
+        if bridge is not None:
+            node_result[
+                "measurement_summary"
+            ] = bridge.snapshot()
+
+        return node_result
 
     return research_node
 
@@ -711,6 +748,19 @@ def build_semantic_verification_node(
                     "unexpected result shape"
                 )
 
+            if (
+                dependencies
+                .measurement_bridge
+                is not None
+            ):
+                (
+                    dependencies
+                    .measurement_bridge
+                    .record_semantic_model_result(
+                        raw[1]
+                    )
+                )
+
             evaluation = (
                 validate_semantic_evaluation(
                     raw[0]
@@ -732,13 +782,28 @@ def build_semantic_verification_node(
                 }
             )
 
-        return {
+        node_result = {
             "semantic_records":
                 records,
 
             "status":
                 "semantically_evaluated",
         }
+
+        if (
+            dependencies
+            .measurement_bridge
+            is not None
+        ):
+            node_result[
+                "measurement_summary"
+            ] = (
+                dependencies
+                .measurement_bridge
+                .snapshot()
+            )
+
+        return node_result
 
     return semantic_verification_node
 

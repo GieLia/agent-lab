@@ -37,6 +37,7 @@ class ResearchGraphState(
 
     research_result: dict[str, Any]
     research_metrics: dict[str, Any]
+    measurement_summary: dict[str, Any]
 
     structural_integrity: str
     structural_errors: list[str]

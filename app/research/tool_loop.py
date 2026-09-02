@@ -818,6 +818,8 @@ async def run_research_tool_loop(
     limits: ResearchLoopLimits | None = None,
     model_runner: Callable[..., Awaitable[Any]]
         | None = None,
+    model_result_observer:
+        Callable[[Any], None] | None = None,
     tool_executor: Callable[..., Awaitable[Any]]
         = execute_tool,
     measurement_writer: Any | None = None,
@@ -884,17 +886,30 @@ async def run_research_tool_loop(
         model_calls += 1
 
         if model_runner is not None:
-            return await model_runner(
+            model_result = await model_runner(
                 prompt
             )
 
-        return await _default_model_runner(
-            prompt,
-            cwd=cwd,
-            account=account,
-            timeout_seconds=
-                limits.model_timeout_seconds,
-        )
+        else:
+            model_result = (
+                await _default_model_runner(
+                    prompt,
+                    cwd=cwd,
+                    account=account,
+                    timeout_seconds=
+                        limits.model_timeout_seconds,
+                )
+            )
+
+        if (
+            model_result_observer
+            is not None
+        ):
+            model_result_observer(
+                model_result
+            )
+
+        return model_result
 
     def protocol_rejection(
         message: str,
