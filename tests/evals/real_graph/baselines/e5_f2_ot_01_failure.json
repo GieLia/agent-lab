@@ -1,0 +1,114 @@
+{
+  "phase": "E5-F2",
+  "case_id": "e5-f2-ot-01",
+  "run_id": "4fc172be-d8d7-41fc-ba43-1f12ce52c9f6",
+  "baseline_type": "preregistered_real_ot_benchmark_failure",
+  "verdict": "failed",
+  "source_git_head_chunks": [
+    "a9e35cb7",
+    "a0515641",
+    "680f401a",
+    "18906142",
+    "7beb85b6"
+  ],
+  "source_hash_encoding": "Concatenate 8-character chunks in array order.",
+  "evaluation_run_status": "failed",
+  "preregistered_checker_rc": 1,
+  "terminal_failure": {
+    "error_type": "GraphNodeAdapterError",
+    "error": "targeted retry merge was rejected",
+    "stage": "targeted_retry_merge",
+    "underlying_reason": "retry result attempted claim text mutation"
+  },
+  "measurement_usage": {
+    "cache_read_tokens": 7631,
+    "cache_write_tokens": 80618,
+    "cost_complete": true,
+    "input_tokens": 38,
+    "missing_reported_cost_invocations": 0,
+    "output_tokens": 17319,
+    "reasoning_output_tokens": 6939,
+    "reported_cost_usd": "0.56278020",
+    "transport_failure_invocations": 0,
+    "worker_invocations": 19
+  },
+  "worker_invocations": [
+    {
+      "role": "critic",
+      "status": "success",
+      "count": 1,
+      "reported_cost_usd": "0.05444900"
+    },
+    {
+      "role": "evidence-verifier",
+      "status": "success",
+      "count": 6,
+      "reported_cost_usd": "0.10882700"
+    },
+    {
+      "role": "researcher",
+      "status": "success",
+      "count": 12,
+      "reported_cost_usd": "0.39950420"
+    }
+  ],
+  "tool_invocations": [
+    {
+      "capability": "web.fetch",
+      "status": "failed",
+      "count": 5
+    },
+    {
+      "capability": "web.fetch",
+      "status": "success",
+      "count": 2
+    },
+    {
+      "capability": "web.search",
+      "status": "success",
+      "count": 3
+    }
+  ],
+  "artifacts": {
+    "summary_json": false,
+    "final_md": false,
+    "checkpoint_sqlite": true
+  },
+  "findings": [
+    {
+      "id": "E5F2-OT01-001",
+      "severity": "high",
+      "finding": "Targeted retry attempted to mutate the text of an existing claim and was correctly rejected by the retry merge invariant."
+    },
+    {
+      "id": "E5F2-OT01-002",
+      "severity": "high",
+      "finding": "Only two web.fetch invocations succeeded while five failed, so the preregistered minimum of five fetched sources was not demonstrated."
+    },
+    {
+      "id": "E5F2-OT01-003",
+      "severity": "medium",
+      "finding": "The graph reached Critic and entered targeted retry before the merge failure."
+    },
+    {
+      "id": "E5F2-OT01-004",
+      "severity": "medium",
+      "finding": "Worker cost telemetry was complete and no worker transport failure was recorded."
+    }
+  ],
+  "remediation_rules": [
+    "Do not weaken the immutable claim-text retry merge invariant.",
+    "Do not change preregistered benchmark acceptance criteria.",
+    "Audit retry prompt/contract and failed fetch causes before another real benchmark run."
+  ],
+  "preserve_original_run": true,
+  "preregistered_checker_verdict": "failed",
+  "missing_final_artifacts": [
+    "summary.json",
+    "worker_result.json",
+    "verification_summary.json",
+    "acceptance_gate.json",
+    "synthesis_result.json",
+    "final.md"
+  ]
+}
