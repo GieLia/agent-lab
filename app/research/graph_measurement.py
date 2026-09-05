@@ -332,6 +332,38 @@ class GraphMeasurementBridge:
         )
 
 
+    def record_semantic_transport_failure(
+        self,
+        error: Exception,
+        duration_ms: int | None,
+        *,
+        account: str,
+    ) -> None:
+
+        invocation_id = (
+            self._record_transport_failure(
+                worker_id=
+                    self.semantic_worker_id,
+
+                role=
+                    "evidence-verifier",
+
+                account=
+                    account,
+
+                error=
+                    error,
+
+                duration_ms=
+                    duration_ms,
+            )
+        )
+
+        self.semantic_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
     def record_critic_transport_failure(
         self,
         error: Exception,

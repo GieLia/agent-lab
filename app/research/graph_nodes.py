@@ -721,34 +721,63 @@ def build_semantic_verification_node(
                 source_id
             ]
 
+            semantic_kwargs = {
+                "claim":
+                    copy.deepcopy(
+                        claim
+                    ),
+
+                "evidence":
+                    copy.deepcopy(
+                        evidence
+                    ),
+
+                "source":
+                    copy.deepcopy(
+                        source
+                    ),
+
+                "cwd":
+                    dependencies.cwd,
+
+                "account":
+                    dependencies
+                    .semantic_account,
+
+                "timeout":
+                    dependencies
+                    .semantic_timeout,
+            }
+
+            if (
+                dependencies
+                .measurement_bridge
+                is not None
+            ):
+
+                bridge = (
+                    dependencies
+                    .measurement_bridge
+                )
+
+                semantic_kwargs[
+                    "failure_observer"
+                ] = (
+                    lambda error, duration_ms:
+                    bridge
+                    .record_semantic_transport_failure(
+                        error,
+                        duration_ms,
+                        account=
+                            dependencies
+                            .semantic_account,
+                    )
+                )
+
             raw = await (
                 dependencies
                 .semantic_runner(
-                    claim=
-                        copy.deepcopy(
-                            claim
-                        ),
-
-                    evidence=
-                        copy.deepcopy(
-                            evidence
-                        ),
-
-                    source=
-                        copy.deepcopy(
-                            source
-                        ),
-
-                    cwd=
-                        dependencies.cwd,
-
-                    account=
-                        dependencies
-                        .semantic_account,
-
-                    timeout=
-                        dependencies
-                        .semantic_timeout,
+                    **semantic_kwargs
                 )
             )
 

@@ -1,4 +1,5 @@
 import json
+import time
 
 from pathlib import Path
 from typing import Any, Awaitable, Callable
@@ -342,6 +343,9 @@ END UNTRUSTED CLAIM-EVIDENCE PACKET
 """.strip()
 
 
+SEMANTIC_EVALUATOR_MAX_TURNS = 3
+
+
 async def evaluate_semantic_evidence(
     *,
     claim: dict[str, Any],
@@ -354,6 +358,12 @@ async def evaluate_semantic_evidence(
         ...,
         Awaitable[WorkerExecutionResult],
     ] = run_claude_detailed,
+    failure_observer:
+        Callable[
+            [Exception, int | None],
+            None,
+        ]
+        | None = None,
 ) -> tuple[
     dict[str, Any],
     WorkerExecutionResult,
@@ -365,18 +375,40 @@ async def evaluate_semantic_evidence(
         source=source,
     )
 
-    result = await model_call(
-        prompt,
-        cwd,
-        timeout=timeout,
-        max_turns=1,
-        tool_profile="reasoning",
-        system_prompt=
-            SEMANTIC_EVALUATOR_SYSTEM_PROMPT,
-        json_schema=
-            SEMANTIC_EVALUATION_SCHEMA,
-        account=account,
-    )
+    started_ns = time.monotonic_ns()
+
+    try:
+        result = await model_call(
+            prompt,
+            cwd,
+            timeout=timeout,
+            max_turns=
+                SEMANTIC_EVALUATOR_MAX_TURNS,
+            tool_profile="reasoning",
+            system_prompt=
+                SEMANTIC_EVALUATOR_SYSTEM_PROMPT,
+            json_schema=
+                SEMANTIC_EVALUATION_SCHEMA,
+            account=account,
+        )
+
+    except Exception as exc:
+
+        duration_ms = int(
+            (
+                time.monotonic_ns()
+                - started_ns
+            )
+            / 1_000_000
+        )
+
+        if failure_observer is not None:
+            failure_observer(
+                exc,
+                duration_ms,
+            )
+
+        raise
 
     if not isinstance(
         result,
