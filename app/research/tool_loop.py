@@ -180,6 +180,9 @@ def _validate_limits(
         )
 
 
+RESEARCH_ACTION_MAX_TURNS = 3
+
+
 async def _default_model_runner(
     prompt: str,
     *,
@@ -192,7 +195,8 @@ async def _default_model_runner(
         prompt,
         cwd,
         timeout=timeout_seconds,
-        max_turns=1,
+        max_turns=
+            RESEARCH_ACTION_MAX_TURNS,
         tool_profile=
             CLAUDE_TOOL_PROFILE,
         system_prompt=
@@ -820,6 +824,12 @@ async def run_research_tool_loop(
         | None = None,
     model_result_observer:
         Callable[[Any], None] | None = None,
+    model_failure_observer:
+        Callable[
+            [Exception, int | None],
+            None,
+        ]
+        | None = None,
     tool_executor: Callable[..., Awaitable[Any]]
         = execute_tool,
     measurement_writer: Any | None = None,
@@ -885,21 +895,46 @@ async def run_research_tool_loop(
 
         model_calls += 1
 
-        if model_runner is not None:
-            model_result = await model_runner(
-                prompt
+        started_ns = time.monotonic_ns()
+
+        try:
+
+            if model_runner is not None:
+                model_result = await model_runner(
+                    prompt
+                )
+
+            else:
+                model_result = (
+                    await _default_model_runner(
+                        prompt,
+                        cwd=cwd,
+                        account=account,
+                        timeout_seconds=
+                            limits.model_timeout_seconds,
+                    )
+                )
+
+        except Exception as exc:
+
+            duration_ms = int(
+                (
+                    time.monotonic_ns()
+                    - started_ns
+                )
+                / 1_000_000
             )
 
-        else:
-            model_result = (
-                await _default_model_runner(
-                    prompt,
-                    cwd=cwd,
-                    account=account,
-                    timeout_seconds=
-                        limits.model_timeout_seconds,
+            if (
+                model_failure_observer
+                is not None
+            ):
+                model_failure_observer(
+                    exc,
+                    duration_ms,
                 )
-            )
+
+            raise
 
         if (
             model_result_observer

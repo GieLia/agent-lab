@@ -300,6 +300,38 @@ class GraphMeasurementBridge:
         return invocation_id
 
 
+    def record_research_transport_failure(
+        self,
+        error: Exception,
+        duration_ms: int | None,
+        *,
+        account: str,
+    ) -> None:
+
+        invocation_id = (
+            self._record_transport_failure(
+                worker_id=
+                    self.research_worker_id,
+
+                role=
+                    "researcher",
+
+                account=
+                    account,
+
+                error=
+                    error,
+
+                duration_ms=
+                    duration_ms,
+            )
+        )
+
+        self.research_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
     def record_critic_transport_failure(
         self,
         error: Exception,

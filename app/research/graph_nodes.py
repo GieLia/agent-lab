@@ -370,6 +370,22 @@ def build_research_node(
                     else None
                 ),
 
+                model_failure_observer=(
+                    (
+                        lambda error, duration_ms:
+                        bridge
+                        .record_research_transport_failure(
+                            error,
+                            duration_ms,
+                            account=
+                                dependencies
+                                .research_account,
+                        )
+                    )
+                    if bridge is not None
+                    else None
+                ),
+
                 measurement_writer=
                     bridge,
 
