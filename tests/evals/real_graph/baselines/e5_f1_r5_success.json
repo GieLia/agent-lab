@@ -1,0 +1,104 @@
+{
+  "phase": "E5-F1-R5",
+  "run_id": "cc37569a-932b-412e-a014-6586b9281575",
+  "baseline_type": "real_graph_full_success",
+  "verdict": "full_real_graph_success",
+  "scope": "Single-source Python venv anchor. This is an end-to-end runtime anchor, not a general research quality benchmark.",
+  "source_git_head_chunks": [
+    "89863481",
+    "2f83c801",
+    "39494b32",
+    "62ea7fa1",
+    "3678d808"
+  ],
+  "source_hash_encoding": "Concatenate 8-character chunks in array order.",
+  "run_status": "success",
+  "acceptance_decision": "accepted",
+  "iteration": 1,
+  "verified_claim_ids": [
+    "claim-1",
+    "claim-2",
+    "claim-3"
+  ],
+  "semantic_claim_atomicity": [
+    "compound",
+    "compound",
+    "compound"
+  ],
+  "worker_invocations": [
+    {
+      "role": "critic",
+      "status": "success",
+      "count": 1
+    },
+    {
+      "role": "evidence-verifier",
+      "status": "success",
+      "count": 3
+    },
+    {
+      "role": "researcher",
+      "status": "success",
+      "count": 3
+    },
+    {
+      "role": "synthesizer",
+      "status": "success",
+      "count": 1
+    }
+  ],
+  "tool_invocations": [
+    {
+      "capability": "web.fetch",
+      "status": "success",
+      "count": 1
+    },
+    {
+      "capability": "web.search",
+      "status": "success",
+      "count": 1
+    }
+  ],
+  "measurement": {
+    "worker_invocations": 8,
+    "input_tokens": 24,
+    "output_tokens": 8551,
+    "cache_read_tokens": 19327,
+    "cache_write_tokens": 30425,
+    "reasoning_output_tokens": 1315,
+    "reported_cost_usd": "0.23336840",
+    "transport_failures": 0
+  },
+  "artifacts": {
+    "worker_result": true,
+    "verification_summary": true,
+    "acceptance_gate": true,
+    "synthesis_input": true,
+    "synthesis_result": true,
+    "final_md": true
+  },
+  "findings": [
+    {
+      "id": "E5F1-R5-001",
+      "finding": "The complete real graph executed successfully through Researcher, Semantic Verifier, Critic, AcceptanceGate and Synthesizer."
+    },
+    {
+      "id": "E5F1-R5-002",
+      "finding": "No worker transport failures were observed."
+    },
+    {
+      "id": "E5F1-R5-003",
+      "finding": "All three factual claims were runtime verified FULL."
+    },
+    {
+      "id": "E5F1-R5-004",
+      "finding": "All three claims were classified as compound despite the mission requesting atomic factual claims."
+    },
+    {
+      "id": "E5F1-R5-005",
+      "finding": "The anchor used one authoritative source and must not be treated as a multi-source research benchmark."
+    }
+  ],
+  "next_phase": "E5-F2-real-benchmark-readiness",
+  "preserve_original_run": true
+}
