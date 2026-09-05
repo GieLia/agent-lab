@@ -748,6 +748,20 @@ async def run_research_graph(
 
             if run_dir.exists():
 
+                failure_usage = None
+
+                try:
+                    failure_usage = (
+                        writer
+                        .summarize_worker_invocations(
+                            run_id=
+                                run_id,
+                        )
+                    )
+
+                except Exception:
+                    pass
+
                 _write_json(
                     run_dir
                     / "failure.json",
@@ -766,6 +780,9 @@ async def run_research_graph(
                             str(
                                 exc
                             ),
+
+                        "measurement_usage":
+                            failure_usage,
                     },
                 )
 

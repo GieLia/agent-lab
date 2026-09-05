@@ -172,6 +172,19 @@ def build_acceptance_gate(
         )
     )
 
+    if (
+        len(accepted)
+        != len(
+            set(
+                accepted
+            )
+        )
+    ):
+        _fail(
+            "duplicate verified claim_id "
+            "in verification summary"
+        )
+
     accepted_set = set(
         accepted
     )
@@ -187,6 +200,207 @@ def build_acceptance_gate(
         _fail(
             "verification summary "
             "accepted unknown claim"
+        )
+
+    claim_results = (
+        verification_summary.get(
+            "claim_results"
+        )
+    )
+
+    if not isinstance(
+        claim_results,
+        list,
+    ):
+        _fail(
+            "verification summary "
+            "claim_results must be a list"
+        )
+
+    result_ids = []
+
+    worker_claim_types = {
+        item[
+            "claim_id"
+        ]:
+            item[
+                "claim_type"
+            ]
+        for item
+        in worker_result.get(
+            "claims",
+            [],
+        )
+    }
+
+    runtime_verified_ids = set()
+
+    for result in claim_results:
+
+        if not isinstance(
+            result,
+            dict,
+        ):
+            _fail(
+                "claim_results entry "
+                "must be an object"
+            )
+
+        claim_id = result.get(
+            "claim_id"
+        )
+
+        if (
+            not isinstance(
+                claim_id,
+                str,
+            )
+            or not claim_id
+        ):
+            _fail(
+                "claim_results entry "
+                "has invalid claim_id"
+            )
+
+        result_ids.append(
+            claim_id
+        )
+
+        if claim_id not in all_claim_ids:
+            _fail(
+                "claim_results contains "
+                "unknown claim"
+            )
+
+        claim_type = result.get(
+            "claim_type"
+        )
+
+        if (
+            claim_type
+            != worker_claim_types[
+                claim_id
+            ]
+        ):
+            _fail(
+                "claim_results claim_type "
+                "mismatch"
+            )
+
+        runtime_status = result.get(
+            "runtime_verification_status"
+        )
+
+        eligible = result.get(
+            "verification_eligible"
+        )
+
+        expected_eligible = (
+            claim_type == "fact"
+            and runtime_status
+            == "verified"
+        )
+
+        if (
+            eligible
+            is not expected_eligible
+        ):
+            _fail(
+                "verification eligibility "
+                "is inconsistent with "
+                "runtime status"
+            )
+
+        if (
+            claim_type != "fact"
+            and runtime_status
+            == "verified"
+        ):
+            _fail(
+                "non-factual claim cannot "
+                "be runtime verified"
+            )
+
+        if runtime_status == "verified":
+
+            full_evidence_ids = (
+                result.get(
+                    "full_evidence_ids"
+                )
+            )
+
+            if (
+                not isinstance(
+                    full_evidence_ids,
+                    list,
+                )
+                or not full_evidence_ids
+            ):
+                _fail(
+                    "runtime verified claim "
+                    "requires FULL evidence"
+                )
+
+            contradicted_evidence_ids = (
+                result.get(
+                    "contradicted_evidence_ids"
+                )
+            )
+
+            if (
+                not isinstance(
+                    contradicted_evidence_ids,
+                    list,
+                )
+            ):
+                _fail(
+                    "contradicted evidence "
+                    "IDs must be a list"
+                )
+
+            if contradicted_evidence_ids:
+                _fail(
+                    "runtime verified claim "
+                    "cannot contain "
+                    "contradicted evidence"
+                )
+
+            runtime_verified_ids.add(
+                claim_id
+            )
+
+    if (
+        len(result_ids)
+        != len(
+            set(
+                result_ids
+            )
+        )
+    ):
+        _fail(
+            "duplicate claim_id "
+            "in claim_results"
+        )
+
+    if (
+        set(
+            result_ids
+        )
+        != all_claim_ids
+    ):
+        _fail(
+            "claim_results must exactly "
+            "cover worker claims"
+        )
+
+    if (
+        runtime_verified_ids
+        != accepted_set
+    ):
+        _fail(
+            "verified_claim_ids disagree "
+            "with claim_results runtime "
+            "verification state"
         )
 
     rejected = [
@@ -315,119 +529,6 @@ def build_acceptance_gate(
             "AcceptanceGate does not "
             "cover all claims"
         )
-
-    return gate
-
-
-def build_rejected_worker_gate(
-    *,
-    mission_id: str,
-    worker_id: str,
-    rationale: str,
-    gate_id: str | None = None,
-    created_at: str | None = None,
-    actor_id: str =
-        "e5-runtime-integrity-v1",
-) -> dict[str, Any]:
-
-    if (
-        not isinstance(
-            mission_id,
-            str,
-        )
-        or not mission_id.strip()
-    ):
-        _fail(
-            "mission_id must be "
-            "a non-empty string"
-        )
-
-    if (
-        not isinstance(
-            worker_id,
-            str,
-        )
-        or not worker_id.strip()
-    ):
-        _fail(
-            "worker_id must be "
-            "a non-empty string"
-        )
-
-    if (
-        not isinstance(
-            rationale,
-            str,
-        )
-        or not rationale.strip()
-    ):
-        _fail(
-            "rationale must be "
-            "a non-empty string"
-        )
-
-    if gate_id is None:
-        gate_id = (
-            "gate-"
-            + str(
-                uuid.uuid4()
-            )
-        )
-
-    if created_at is None:
-        created_at = _now()
-
-    gate = {
-        "gate_id":
-            gate_id,
-
-        "mission_id":
-            mission_id.strip(),
-
-        "decision":
-            "rejected",
-
-        "accepted_worker_ids":
-            [],
-
-        "accepted_claim_ids":
-            [],
-
-        "rejected_claim_ids":
-            [],
-
-        "decided_by": {
-            "actor_type":
-                "runtime",
-
-            "actor_id":
-                actor_id,
-        },
-
-        "rationale":
-            rationale.strip(),
-
-        "created_at":
-            created_at,
-
-        "rejected_worker_ids": [
-            worker_id.strip(),
-        ],
-    }
-
-    try:
-        Draft202012Validator(
-            ACCEPTANCE_GATE_SCHEMA
-        ).validate(
-            gate
-        )
-
-    except Exception as exc:
-        raise AcceptancePolicyError(
-            "generated rejected-worker "
-            "AcceptanceGate failed "
-            "canonical schema"
-        ) from exc
 
     return gate
 

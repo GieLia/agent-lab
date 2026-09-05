@@ -572,6 +572,154 @@ class MeasurementWriter:
 
             return None
 
+    def summarize_worker_invocations(
+        self,
+        *,
+        run_id: uuid.UUID,
+    ) -> dict[str, Any] | None:
+
+        try:
+            with self._connect() as connection:
+                with connection.cursor() as cursor:
+
+                    cursor.execute(
+                        """
+                        SELECT
+                            COUNT(*),
+
+                            COALESCE(
+                                SUM(input_tokens),
+                                0
+                            ),
+
+                            COALESCE(
+                                SUM(output_tokens),
+                                0
+                            ),
+
+                            COALESCE(
+                                SUM(cache_read_tokens),
+                                0
+                            ),
+
+                            COALESCE(
+                                SUM(cache_write_tokens),
+                                0
+                            ),
+
+                            COALESCE(
+                                SUM(
+                                    reasoning_output_tokens
+                                ),
+                                0
+                            ),
+
+                            COALESCE(
+                                SUM(reported_cost_usd),
+                                0
+                            ),
+
+                            COUNT(*) FILTER (
+                                WHERE
+                                    raw_result
+                                    ->> 'failure_stage'
+                                    = 'transport'
+                            ),
+
+                            COUNT(*) FILTER (
+                                WHERE
+                                    reported_cost_usd
+                                    IS NULL
+                                    AND (
+                                        raw_result
+                                        ->> 'failure_stage'
+                                        IS DISTINCT FROM
+                                        'transport'
+                                    )
+                            )
+                        FROM
+                            measurement.worker_invocation
+                        WHERE
+                            run_id = %s
+                        """,
+                        (
+                            run_id,
+                        ),
+                    )
+
+                    row = cursor.fetchone()
+
+            if row is None:
+                raise RuntimeError(
+                    "worker usage aggregation "
+                    "returned no row"
+                )
+
+            transport_failures = int(
+                row[7]
+            )
+
+            missing_costs = int(
+                row[8]
+            )
+
+            return {
+                "worker_invocations":
+                    int(
+                        row[0]
+                    ),
+
+                "input_tokens":
+                    int(
+                        row[1]
+                    ),
+
+                "output_tokens":
+                    int(
+                        row[2]
+                    ),
+
+                "cache_read_tokens":
+                    int(
+                        row[3]
+                    ),
+
+                "cache_write_tokens":
+                    int(
+                        row[4]
+                    ),
+
+                "reasoning_output_tokens":
+                    int(
+                        row[5]
+                    ),
+
+                "reported_cost_usd":
+                    str(
+                        row[6]
+                    ),
+
+                "transport_failure_invocations":
+                    transport_failures,
+
+                "missing_reported_cost_invocations":
+                    missing_costs,
+
+                "cost_complete": (
+                    transport_failures == 0
+                    and missing_costs == 0
+                ),
+            }
+
+        except Exception as exc:
+            self._failure(
+                "summarize_worker_invocations",
+                exc,
+            )
+
+            return None
+
+
     def finish_run(
         self,
         *,

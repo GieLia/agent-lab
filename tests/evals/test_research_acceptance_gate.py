@@ -1,3 +1,5 @@
+import copy
+
 from app.research.acceptance import (
     AcceptancePolicyError,
     build_acceptance_gate,
@@ -148,13 +150,165 @@ def main():
         )
 
 
-    zero_verification = dict(
-        verification
+    inconsistent_verified_set = (
+        copy.deepcopy(
+            verification
+        )
+    )
+
+    inconsistent_verified_set[
+        "verified_claim_ids"
+    ] = []
+
+    try:
+        build_acceptance_gate(
+            mission_id=
+                "mission-inconsistent",
+
+            worker_result=
+                worker,
+
+            verification_summary=
+                inconsistent_verified_set,
+        )
+
+    except AcceptancePolicyError:
+        print(
+            "ACCEPTANCE_VERIFIED_SET_MISMATCH_REJECTED_OK"
+        )
+
+    else:
+        raise AssertionError(
+            "inconsistent verified set accepted"
+        )
+
+
+    missing_claim_result = (
+        copy.deepcopy(
+            verification
+        )
+    )
+
+    missing_claim_result[
+        "claim_results"
+    ] = (
+        missing_claim_result[
+            "claim_results"
+        ][1:]
+    )
+
+    try:
+        build_acceptance_gate(
+            mission_id=
+                "mission-missing-result",
+
+            worker_result=
+                worker,
+
+            verification_summary=
+                missing_claim_result,
+        )
+
+    except AcceptancePolicyError:
+        print(
+            "ACCEPTANCE_CLAIM_RESULT_COVERAGE_REJECTED_OK"
+        )
+
+    else:
+        raise AssertionError(
+            "incomplete claim_results accepted"
+        )
+
+
+    no_full_evidence = (
+        copy.deepcopy(
+            verification
+        )
+    )
+
+    for result in (
+        no_full_evidence[
+            "claim_results"
+        ]
+    ):
+        if (
+            result[
+                "claim_id"
+            ]
+            == "claim-full"
+        ):
+            result[
+                "full_evidence_ids"
+            ] = []
+
+    try:
+        build_acceptance_gate(
+            mission_id=
+                "mission-no-full",
+
+            worker_result=
+                worker,
+
+            verification_summary=
+                no_full_evidence,
+        )
+
+    except AcceptancePolicyError:
+        print(
+            "ACCEPTANCE_VERIFIED_WITHOUT_FULL_REJECTED_OK"
+        )
+
+    else:
+        raise AssertionError(
+            "verified claim without FULL "
+            "evidence accepted"
+        )
+
+
+    zero_verification = (
+        copy.deepcopy(
+            verification
+        )
     )
 
     zero_verification[
         "verified_claim_ids"
     ] = []
+
+    for result in (
+        zero_verification[
+            "claim_results"
+        ]
+    ):
+        if (
+            result[
+                "claim_id"
+            ]
+            == "claim-full"
+        ):
+            result[
+                "runtime_verification_status"
+            ] = "unverified"
+
+            result[
+                "verification_eligible"
+            ] = False
+
+            result[
+                "full_evidence_ids"
+            ] = []
+
+    if (
+        "claim-full"
+        not in zero_verification[
+            "unverified_claim_ids"
+        ]
+    ):
+        zero_verification[
+            "unverified_claim_ids"
+        ].append(
+            "claim-full"
+        )
 
     rejected_gate = (
         build_acceptance_gate(

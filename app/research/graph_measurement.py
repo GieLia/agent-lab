@@ -507,7 +507,7 @@ class GraphMeasurementBridge:
         self,
     ) -> dict[str, Any]:
 
-        return {
+        result = {
             "run_id":
                 str(
                     self.run_id
@@ -593,3 +593,24 @@ class GraphMeasurementBridge:
                     .transport_failure_invocation_ids
                 ),
         }
+
+        summarizer = getattr(
+            self.writer,
+            "summarize_worker_invocations",
+            None,
+        )
+
+        if callable(
+            summarizer
+        ):
+            usage = summarizer(
+                run_id=
+                    self.run_id,
+            )
+
+            if usage is not None:
+                result[
+                    "usage"
+                ] = usage
+
+        return result
