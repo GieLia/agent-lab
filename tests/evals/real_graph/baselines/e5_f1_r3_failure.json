@@ -1,0 +1,59 @@
+{
+  "phase": "E5-F1-R3",
+  "run_id": "ea29404d-a492-4a20-b665-33f9eed685b5",
+  "baseline_type": "real_graph_researcher_transport_failure",
+  "verdict": "researcher_structured_output_turn_budget_failed",
+  "source_worktree_dirty": false,
+  "terminal_stage": "researcher",
+  "terminal_reason": "max_turns",
+  "configured_max_turns": 1,
+  "observed_num_turns": 2,
+  "research": {
+    "successful_worker_invocations": 2,
+    "failed_worker_invocations_persisted": 0,
+    "web_search_success": 1,
+    "web_fetch_success": 1
+  },
+  "cost": {
+    "measurement_persisted_cost_usd": 0.036122,
+    "failed_call_reported_cost_usd": 0.054004,
+    "minimum_observed_claude_cost_usd": 0.090126
+  },
+  "findings": [
+    {
+      "id": "E5F1-R3-001",
+      "severity": "high",
+      "finding": "Researcher structured-output invocation exhausted max_turns=1 before the graph reached semantic verification or Critic."
+    },
+    {
+      "id": "E5F1-R3-002",
+      "severity": "medium",
+      "finding": "Researcher transport failure was not persisted as a failed worker invocation."
+    },
+    {
+      "id": "E5F1-R3-003",
+      "severity": "medium",
+      "finding": "Measurement cost undercounts the run because cost reported by the failed transport invocation was not persisted."
+    }
+  ],
+  "next_action": "Raise Researcher structured action turn budget to 3 and connect Researcher transport-failure telemetry before E5-F1-R4.",
+  "preserve_original_run": true,
+  "source_git_head_chunks": [
+    "5ac74fa6",
+    "6e3691a4",
+    "8e549c83",
+    "b60084ec",
+    "755c9092"
+  ],
+  "source_diff_sha256_chunks": [
+    "e3b0c442",
+    "98fc1c14",
+    "9afbf4c8",
+    "996fb924",
+    "27ae41e4",
+    "649b934c",
+    "a495991b",
+    "7852b855"
+  ],
+  "source_hash_encoding": "Concatenate 8-character chunks in array order."
+}
