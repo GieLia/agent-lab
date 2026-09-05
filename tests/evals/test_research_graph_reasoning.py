@@ -216,7 +216,7 @@ async def check_critic():
         ][
             "max_turns"
         ]
-        == 1
+        == 3
     )
 
     assert (
@@ -473,7 +473,7 @@ async def check_synthesizer():
             kwargs[
                 "max_turns"
             ]
-            == 1
+            == 3
         )
 
         return execution_result(

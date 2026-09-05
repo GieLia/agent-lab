@@ -68,6 +68,10 @@ class GraphMeasurementBridge:
         default_factory=list
     )
 
+    transport_failure_invocation_ids: list[str] = field(
+        default_factory=list
+    )
+
     latest_research_worker_invocation_id: (
         str | None
     ) = None
@@ -231,6 +235,135 @@ class GraphMeasurementBridge:
         )
 
 
+    def _record_transport_failure(
+        self,
+        *,
+        worker_id: str,
+        role: str,
+        account: str,
+        error: Exception,
+        duration_ms: int | None,
+    ) -> str:
+
+        invocation_id = (
+            self.writer
+            .record_worker_transport_failure(
+                run_id=
+                    self.run_id,
+
+                worker_id=
+                    worker_id,
+
+                role=
+                    role,
+
+                provider=
+                    "claude",
+
+                account=
+                    account,
+
+                error=
+                    error,
+
+                tool_profile=
+                    "reasoning",
+
+                tools_exposed_count=
+                    0,
+
+                duration_ms=
+                    duration_ms,
+            )
+        )
+
+        if (
+            not isinstance(
+                invocation_id,
+                str,
+            )
+            or not invocation_id
+        ):
+            raise GraphMeasurementError(
+                "transport failure telemetry "
+                "was not persisted"
+            )
+
+        self.worker_invocation_ids.append(
+            invocation_id
+        )
+
+        self.transport_failure_invocation_ids.append(
+            invocation_id
+        )
+
+        return invocation_id
+
+
+    def record_critic_transport_failure(
+        self,
+        error: Exception,
+        duration_ms: int | None,
+        *,
+        account: str,
+    ) -> None:
+
+        invocation_id = (
+            self._record_transport_failure(
+                worker_id=
+                    self.critic_worker_id,
+
+                role=
+                    "critic",
+
+                account=
+                    account,
+
+                error=
+                    error,
+
+                duration_ms=
+                    duration_ms,
+            )
+        )
+
+        self.critic_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
+    def record_synthesis_transport_failure(
+        self,
+        error: Exception,
+        duration_ms: int | None,
+        *,
+        account: str,
+    ) -> None:
+
+        invocation_id = (
+            self._record_transport_failure(
+                worker_id=
+                    self.synthesis_worker_id,
+
+                role=
+                    "synthesizer",
+
+                account=
+                    account,
+
+                error=
+                    error,
+
+                duration_ms=
+                    duration_ms,
+            )
+        )
+
+        self.synthesis_worker_invocation_ids.append(
+            invocation_id
+        )
+
+
     def record_tool_invocation(
         self,
         **kwargs: Any,
@@ -350,6 +483,12 @@ class GraphMeasurementBridge:
                     self.tool_invocation_ids
                 ),
 
+            "transport_failure_invocation_ids":
+                list(
+                    self
+                    .transport_failure_invocation_ids
+                ),
+
             "worker_invocation_count":
                 len(
                     self.worker_invocation_ids
@@ -382,5 +521,11 @@ class GraphMeasurementBridge:
             "tool_invocation_count":
                 len(
                     self.tool_invocation_ids
+                ),
+
+            "transport_failure_invocation_count":
+                len(
+                    self
+                    .transport_failure_invocation_ids
                 ),
         }

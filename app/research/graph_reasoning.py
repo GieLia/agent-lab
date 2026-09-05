@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 
 from pathlib import Path
 from typing import (
@@ -37,6 +38,9 @@ class GraphReasoningError(
     RuntimeError
 ):
     pass
+
+
+STRUCTURED_REASONING_MAX_TURNS = 3
 
 
 CRITIC_SYSTEM_PROMPT = """
@@ -242,6 +246,12 @@ async def evaluate_research_critic(
             None,
         ]
         | None = None,
+    failure_observer:
+        Callable[
+            [Exception, int | None],
+            None,
+        ]
+        | None = None,
 ) -> tuple[
     dict[str, Any],
     WorkerExecutionResult,
@@ -280,18 +290,40 @@ async def evaluate_research_critic(
         packet=packet,
     )
 
-    result = await model_call(
-        prompt,
-        cwd,
-        timeout=timeout,
-        max_turns=1,
-        tool_profile="reasoning",
-        system_prompt=
-            CRITIC_SYSTEM_PROMPT,
-        json_schema=
-            CRITIC_RESULT_SCHEMA,
-        account=account,
-    )
+    started_ns = time.monotonic_ns()
+
+    try:
+        result = await model_call(
+            prompt,
+            cwd,
+            timeout=timeout,
+            max_turns=
+                STRUCTURED_REASONING_MAX_TURNS,
+            tool_profile="reasoning",
+            system_prompt=
+                CRITIC_SYSTEM_PROMPT,
+            json_schema=
+                CRITIC_RESULT_SCHEMA,
+            account=account,
+        )
+
+    except Exception as exc:
+
+        duration_ms = int(
+            (
+                time.monotonic_ns()
+                - started_ns
+            )
+            / 1_000_000
+        )
+
+        if failure_observer is not None:
+            failure_observer(
+                exc,
+                duration_ms,
+            )
+
+        raise
 
     if not isinstance(
         result,
@@ -399,6 +431,12 @@ async def synthesize_verified_material(
             None,
         ]
         | None = None,
+    failure_observer:
+        Callable[
+            [Exception, int | None],
+            None,
+        ]
+        | None = None,
 ) -> tuple[
     dict[str, Any],
     WorkerExecutionResult,
@@ -439,18 +477,40 @@ async def synthesize_verified_material(
         packet=packet,
     )
 
-    result = await model_call(
-        prompt,
-        cwd,
-        timeout=timeout,
-        max_turns=1,
-        tool_profile="reasoning",
-        system_prompt=
-            SYNTHESIS_SYSTEM_PROMPT,
-        json_schema=
-            SYNTHESIS_RESULT_SCHEMA,
-        account=account,
-    )
+    started_ns = time.monotonic_ns()
+
+    try:
+        result = await model_call(
+            prompt,
+            cwd,
+            timeout=timeout,
+            max_turns=
+                STRUCTURED_REASONING_MAX_TURNS,
+            tool_profile="reasoning",
+            system_prompt=
+                SYNTHESIS_SYSTEM_PROMPT,
+            json_schema=
+                SYNTHESIS_RESULT_SCHEMA,
+            account=account,
+        )
+
+    except Exception as exc:
+
+        duration_ms = int(
+            (
+                time.monotonic_ns()
+                - started_ns
+            )
+            / 1_000_000
+        )
+
+        if failure_observer is not None:
+            failure_observer(
+                exc,
+                duration_ms,
+            )
+
+        raise
 
     if not isinstance(
         result,
@@ -510,6 +570,22 @@ def build_measured_critic_runner(
                     is not None
                     else None
                 ),
+
+                failure_observer=(
+                    (
+                        lambda error, duration_ms:
+                        measurement_bridge
+                        .record_critic_transport_failure(
+                            error,
+                            duration_ms,
+                            account=account,
+                        )
+                    )
+                    if measurement_bridge
+                    is not None
+                    else None
+                ),
+
                 **kwargs,
             )
         )
@@ -585,6 +661,21 @@ def build_measured_synthesis_node(
                 result_observer=(
                     measurement_bridge
                     .record_synthesis_model_result
+                    if measurement_bridge
+                    is not None
+                    else None
+                ),
+
+                failure_observer=(
+                    (
+                        lambda error, duration_ms:
+                        measurement_bridge
+                        .record_synthesis_transport_failure(
+                            error,
+                            duration_ms,
+                            account=account,
+                        )
+                    )
                     if measurement_bridge
                     is not None
                     else None

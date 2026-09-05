@@ -324,6 +324,129 @@ class MeasurementWriter:
 
             return None
 
+    def record_worker_transport_failure(
+        self,
+        *,
+        run_id: uuid.UUID,
+        worker_id: str,
+        role: str,
+        provider: str,
+        account: str | None,
+        error: Exception,
+        tool_profile: str | None = None,
+        tools_exposed_count: int | None = None,
+        duration_ms: int | None = None,
+        invocation_id: str | None = None,
+    ) -> str | None:
+
+        if invocation_id is None:
+            invocation_id = str(
+                uuid.uuid4()
+            )
+
+        finished_at = datetime.now(
+            timezone.utc
+        )
+
+        if duration_ms is not None:
+            started_at = (
+                finished_at
+                - timedelta(
+                    milliseconds=
+                        duration_ms
+                )
+            )
+        else:
+            started_at = finished_at
+
+        error_text = str(
+            error
+        )
+
+        error_bytes = error_text.encode(
+            "utf-8"
+        )
+
+        raw_result = {
+            "failure_stage":
+                "transport",
+
+            "error_type":
+                type(
+                    error
+                ).__name__,
+
+            "error_sha256":
+                hashlib.sha256(
+                    error_bytes
+                ).hexdigest(),
+
+            "error_bytes":
+                len(
+                    error_bytes
+                ),
+        }
+
+        try:
+            with self._connect() as connection:
+                with connection.cursor() as cursor:
+
+                    cursor.execute(
+                        """
+                        INSERT INTO
+                            measurement.worker_invocation (
+                                invocation_id,
+                                run_id,
+                                worker_id,
+                                role,
+                                provider,
+                                account,
+                                skill_ids,
+                                tool_profile,
+                                tools_exposed_count,
+                                started_at,
+                                finished_at,
+                                duration_ms,
+                                status,
+                                raw_result
+                            )
+                        VALUES (
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s, %s
+                        )
+                        """,
+                        (
+                            invocation_id,
+                            run_id,
+                            worker_id,
+                            role,
+                            provider,
+                            account,
+                            [],
+                            tool_profile,
+                            tools_exposed_count,
+                            started_at,
+                            finished_at,
+                            duration_ms,
+                            "failed",
+                            Jsonb(
+                                raw_result
+                            ),
+                        ),
+                    )
+
+            return invocation_id
+
+        except Exception as exc:
+            self._failure(
+                "record_worker_transport_failure",
+                exc,
+            )
+
+            return None
+
+
     def record_tool_invocation(
         self,
         *,
