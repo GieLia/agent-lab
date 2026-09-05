@@ -31,6 +31,54 @@ def load_json(
     )
 
 
+def independent_domain(
+    hostname,
+):
+
+    parts = [
+        part
+        for part in (
+            hostname
+            .lower()
+            .strip(".")
+            .split(".")
+        )
+        if part
+    ]
+
+    if len(parts) <= 2:
+        return ".".join(
+            parts
+        )
+
+    multipart_suffixes = {
+        "co.uk",
+        "org.uk",
+        "ac.uk",
+        "com.au",
+        "net.au",
+        "org.au",
+        "co.jp",
+    }
+
+    suffix = ".".join(
+        parts[-2:]
+    )
+
+    if (
+        suffix
+        in multipart_suffixes
+        and len(parts) >= 3
+    ):
+        return ".".join(
+            parts[-3:]
+        )
+
+    return ".".join(
+        parts[-2:]
+    )
+
+
 def main():
 
     run_id = os.environ.get(
@@ -89,6 +137,16 @@ def main():
         / "summary.json"
     )
 
+    assert (
+        summary.get(
+            "status"
+        )
+        == "finished"
+    ), (
+        "graph run did not finish "
+        "successfully"
+    )
+
     worker = load_json(
         run_dir
         / "worker_result.json"
@@ -129,6 +187,7 @@ def main():
 
 
     domains = set()
+    source_urls = set()
 
     for source in sources:
 
@@ -141,9 +200,27 @@ def main():
             str,
         )
 
+        normalized_url = (
+            url.strip()
+        )
+
+        assert normalized_url
+
+        assert (
+            normalized_url
+            not in source_urls
+        ), (
+            "duplicate fetched source URL: "
+            + normalized_url
+        )
+
+        source_urls.add(
+            normalized_url
+        )
+
         hostname = (
             urlparse(
-                url
+                normalized_url
             ).hostname
             or ""
         ).lower()
@@ -151,7 +228,9 @@ def main():
         assert hostname
 
         domains.add(
-            hostname
+            independent_domain(
+                hostname
+            )
         )
 
         metadata = source.get(
