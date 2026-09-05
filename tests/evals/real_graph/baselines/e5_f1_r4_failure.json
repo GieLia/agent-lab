@@ -1,0 +1,55 @@
+{
+  "phase": "E5-F1-R4",
+  "run_id": "b3aa6d4c-d69f-49c3-85f2-3629485ffe83",
+  "baseline_type": "real_graph_semantic_transport_failure",
+  "verdict": "research_passed_semantic_turn_budget_failed",
+  "source_git_head_chunks": [
+    "4a13987b",
+    "b3471020",
+    "adc57ca5",
+    "8e3a49e9",
+    "9391efda"
+  ],
+  "source_hash_encoding": "Concatenate 8-character chunks in array order.",
+  "research": {
+    "worker_invocations_success": 4,
+    "web_search_success": 2,
+    "web_fetch_success": 1
+  },
+  "semantic_verification": {
+    "successful_invocations": 2,
+    "failed_invocations_persisted": 0,
+    "terminal_reason": "max_turns",
+    "configured_max_turns": 1,
+    "observed_num_turns": 2
+  },
+  "cost": {
+    "measurement_persisted_cost_usd": 0.1679782,
+    "failed_call_reported_cost_usd": 0.017577,
+    "minimum_observed_claude_cost_usd": 0.1855552
+  },
+  "findings": [
+    {
+      "id": "E5F1-R4-001",
+      "severity": "high",
+      "finding": "Semantic Verifier structured-output invocation exhausted max_turns=1."
+    },
+    {
+      "id": "E5F1-R4-002",
+      "severity": "medium",
+      "finding": "Researcher max_turns remediation worked: four Researcher invocations completed successfully."
+    },
+    {
+      "id": "E5F1-R4-003",
+      "severity": "medium",
+      "finding": "Failed Semantic Verifier invocation was not persisted in worker telemetry."
+    },
+    {
+      "id": "E5F1-R4-004",
+      "severity": "medium",
+      "finding": "Measurement cost excludes the failed Semantic Verifier invocation."
+    }
+  ],
+  "next_action": "Raise Semantic Verifier structured-output turn budget to 3 and instrument semantic transport-failure telemetry before the next full graph run.",
+  "preserve_original_run": true
+}
